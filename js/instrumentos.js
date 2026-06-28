@@ -349,48 +349,32 @@ async function eliminarInstrumento(id) {
         return;
     }
 
-    if (instrumento.quantity === 0) {
-
-        alert(
-            "Este instrumento ya está agotado"
-        );
-
-        return;
-    }
-
-    const cantidad =
-        prompt(
-            `Instrumento: ${instrumento.name}
+    const cantidad = prompt(
+        `Instrumento: ${instrumento.name}
 
 Disponibles: ${instrumento.quantity}
 
-¿Cuántos desea retirar?`
-        );
+¿Cuántos desea eliminar?`
+    );
 
-    if (
-        cantidad === null ||
-        cantidad.trim() === ""
-    ) {
+    if (cantidad === null) {
         return;
     }
 
-    const retirar =
+    const eliminar =
         Number(cantidad);
 
     if (
-        isNaN(retirar) ||
-        retirar <= 0
+        isNaN(eliminar) ||
+        eliminar <= 0
     ) {
 
-        alert(
-            "Cantidad inválida"
-        );
-
+        alert("Cantidad inválida");
         return;
     }
 
     if (
-        retirar > instrumento.quantity
+        eliminar > instrumento.quantity
     ) {
 
         alert(
@@ -404,7 +388,7 @@ Disponibles: ${instrumento.quantity}
 
         await apiFetch(
 
-            `/api/instrumentos/${id}/${retirar}`,
+            `/api/instrumentos/${id}/${eliminar}`,
 
             {
                 method: "DELETE"
