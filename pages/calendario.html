@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calendario – BandSync BCO</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+</head>
+<body>
+
+<script src="../js/api.js"></script>
+<script src="../js/navbar.js"></script>
+<script>
+  requireAuth();
+  document.addEventListener("DOMContentLoaded", () => injectNavbar("calendario"));
+</script>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <h2>Calendario de Ensayos</h2>
+    <p>Visualizá todos los ensayos de la Banda Comunal de Orotina</p>
+  </div>
+
+  <!-- Stats rápidos -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-label">Este mes</div><div class="stat-value" id="statMes">—</div></div>
+    <div class="stat-card gold"><div class="stat-label">Bronces</div><div class="stat-value" id="statBronces">—</div></div>
+    <div class="stat-card"><div class="stat-label">Maderas</div><div class="stat-value" id="statMaderas">—</div></div>
+    <div class="stat-card navy"><div class="stat-label">Percusión</div><div class="stat-value" id="statPerc">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="cal-nav">
+      <div class="cal-nav-btns">
+        <button class="btn-secondary btn-sm" id="btnPrev">‹ Anterior</button>
+        <button class="btn-secondary btn-sm" id="btnToday">Hoy</button>
+        <button class="btn-secondary btn-sm" id="btnNext">Siguiente ›</button>
+      </div>
+      <h3 id="calTitle"></h3>
+      <button class="btn-gold btn-sm" onclick="window.location.href='ensayos.html'">+ Nuevo ensayo</button>
+    </div>
+
+    <!-- Cabecera días -->
+    <div class="calendar-grid" id="calHeader">
+      <div class="cal-day-name">Dom</div>
+      <div class="cal-day-name">Lun</div>
+      <div class="cal-day-name">Mar</div>
+      <div class="cal-day-name">Mié</div>
+      <div class="cal-day-name">Jue</div>
+      <div class="cal-day-name">Vie</div>
+      <div class="cal-day-name">Sáb</div>
+    </div>
+    <div class="calendar-grid" id="calBody">
+      <div class="spinner">Cargando calendario...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detalle día -->
+<div class="modal-overlay hidden" id="dayModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalDate">Ensayos del día</h3>
+      <button class="modal-close" onclick="closeDayModal()">×</button>
+    </div>
+    <div id="modalContent"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeDayModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentDate = new Date();
+  let allEnsayos  = [];
+
+  async function loadEnsayos() {
+    try {
+      allEnsayos = await apiFetch("/api/ensayos/all") || [];
+    } catch(e) {
+      allEnsayos = [];
+      console.warn("No se pudieron cargar ensayos:", e.message);
+    }
+    renderCalendar();
+    updateStats();
+  }
+
+  function updateStats() {
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+    const mesEnsayos = allEnsayos.filter(e => {
+      const d = new Date(e.date || e.fecha);
+      return d.getFullYear() === y && d.getMonth() === m;
+    });
+    document.getElementById("statMes").textContent     = mesEnsayos.length;
+    document.getElementById("statBronces").textContent = mesEnsayos.filter(e => (e.section||e.seccion||"").toLowerCase().includes("bron")).length;
+    document.getElementById("statMaderas").textContent = mesEnsayos.filter(e => (e.section||e.seccion||"").toLowerCase().includes("mad")).length;
+    document.getElementById("statPerc").textContent    = mesEnsayos.filter(e => (e.section||e.seccion||"").toLowerCase().includes("perc")).length;
+  }
+
+  function renderCalendar() {
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+    const title = new Date(y, m, 1).toLocaleDateString("es-CR", { month: "long", year: "numeric" });
+    document.getElementById("calTitle").textContent = title.charAt(0).toUpperCase() + title.slice(1);
+
+    const firstDay  = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const today     = new Date();
+
+    const body = document.getElementById("calBody");
+    body.innerHTML = "";
+
+    // Días vacíos del mes anterior
+    for (let i = 0; i < firstDay; i++) {
+      const prevDay = new Date(y, m, -firstDay + i + 1).getDate();
+      body.innerHTML += `<div class="cal-day other-month"><div class="cal-day-num">${prevDay}</div></div>`;
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const dayEnsayos = allEnsayos.filter(e => (e.date || e.fecha || "").startsWith(dateStr));
+      const isToday = today.getDate() === d && today.getMonth() === m && today.getFullYear() === y;
+
+      const dots = dayEnsayos.map(e => {
+        const sec = (e.section || e.seccion || "").toLowerCase();
+        let cls = sec.includes("bron") ? "bronces" : sec.includes("mad") ? "maderas" : "percusion";
+        return `<div class="cal-dot ${cls}" title="${e.section||e.seccion}"></div>`;
+      }).join("");
+
+      const cell = document.createElement("div");
+      cell.className = `cal-day${isToday ? " today" : ""}${dayEnsayos.length ? " has-ensayo" : ""}`;
+      cell.innerHTML = `
+        <div class="cal-day-num">${d}</div>
+        <div class="cal-dots">${dots}</div>
+      `;
+      if (dayEnsayos.length) {
+        cell.addEventListener("click", () => openDayModal(dateStr, dayEnsayos));
+      }
+      body.appendChild(cell);
+    }
+  }
+
+  function openDayModal(dateStr, ensayos) {
+    const [y, m, d] = dateStr.split("-");
+    const label = new Date(y, m-1, d).toLocaleDateString("es-CR", { weekday:"long", day:"numeric", month:"long", year:"numeric"});
+    document.getElementById("modalDate").textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+    const rows = ensayos.map(e => `
+      <tr>
+        <td>${badgeSec(e.section || e.seccion)}</td>
+        <td>${badgeAsist(e.assistance || e.asistencia)}</td>
+        <td>${e.integrante?.name || e.integrante?.nombre || "—"}</td>
+      </tr>
+    `).join("");
+
+    document.getElementById("modalContent").innerHTML = `
+      <table>
+        <thead><tr><th>Sección</th><th>Asistencia</th><th>Integrante</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    document.getElementById("dayModal").classList.remove("hidden");
+  }
+
+  function closeDayModal() {
+    document.getElementById("dayModal").classList.add("hidden");
+  }
+
+  document.getElementById("btnPrev").addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar(); updateStats();
+  });
+  document.getElementById("btnNext").addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar(); updateStats();
+  });
+  document.getElementById("btnToday").addEventListener("click", () => {
+    currentDate = new Date();
+    renderCalendar(); updateStats();
+  });
+
+  loadEnsayos();
+</script>
+</body>
+</html>

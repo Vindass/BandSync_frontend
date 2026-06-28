@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Presentaciones – BandSync BCO</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+</head>
+<body>
+
+<script src="../js/api.js"></script>
+<script src="../js/navbar.js"></script>
+<script>
+  requireAuth();
+  document.addEventListener("DOMContentLoaded", () => injectNavbar("presentaciones"));
+</script>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <h2>Presentaciones</h2>
+    <p>Registrá y consultá las presentaciones oficiales de la banda</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="date" id="filtroFechaPres" />
+    <input type="text" id="filtroLugar" placeholder="Buscar por lugar…"/>
+    <select id="filtroAsistPres">
+      <option value="">Toda asistencia</option>
+      <option value="Presente">Presente</option>
+      <option value="Ausente">Ausente</option>
+    </select>
+    <button class="btn-secondary btn-sm" onclick="cargarPresentaciones()">🔍 Filtrar</button>
+    <button class="btn-gold" onclick="abrirModal()">+ Nueva presentación</button>
+  </div>
+
+  <div id="alertaPres"></div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="margin-bottom:1rem">
+    <div class="stat-card">
+      <div class="stat-label">Total presentaciones</div>
+      <div class="stat-value" id="statTotal">—</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">Con asistencia</div>
+      <div class="stat-value" id="statAsist">—</div>
+    </div>
+    <div class="stat-card navy">
+      <div class="stat-label">Ausencias</div>
+      <div class="stat-value" id="statAus">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Fecha</th><th>Lugar</th><th>Integrante</th><th>Asistencia</th><th>Acciones</th></tr>
+        </thead>
+        <tbody id="presBody">
+          <tr><td colspan="6"><div class="spinner">Cargando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="presModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="presModalTitle">Nueva Presentación</h3>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <form id="presForm">
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="inpPresFecha" required/>
+      </div>
+      <div class="form-group">
+        <label>Lugar</label>
+        <input type="text" id="inpPresLugar" required placeholder="Ej: Parque Central de Orotina"/>
+      </div>
+      <div class="form-group">
+        <label>Integrante</label>
+        <select id="inpPresInt" required>
+          <option value="">Cargando integrantes...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Asistencia</label>
+        <select id="inpPresAsist" required>
+          <option value="Presente">Presente</option>
+          <option value="Ausente">Ausente</option>
+        </select>
+      </div>
+      <div id="presFormError" class="error-msg hidden"></div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary"   onclick="guardarPres()" id="btnGuardarPres">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let presentaciones = [];
+  let editingId = null;
+
+  async function init() {
+    try {
+      const ints = await apiFetch("/api/integrantes") || [];
+      const sel  = document.getElementById("inpPresInt");
+      sel.innerHTML = `<option value="">Seleccioná un integrante</option>` +
+        ints.map(i => `<option value="${i.id}">${i.name || i.nombre}</option>`).join("");
+    } catch(e) { console.warn(e.message); }
+    cargarPresentaciones();
+  }
+
+  async function cargarPresentaciones() {
+    const fecha = document.getElementById("filtroFechaPres").value;
+    const lugar = document.getElementById("filtroLugar").value.trim();
+    const asist = document.getElementById("filtroAsistPres").value;
+
+    document.getElementById("presBody").innerHTML =
+      `<tr><td colspan="6"><div class="spinner">Cargando...</div></td></tr>`;
+
+    try {
+      let url = "/api/presentaciones/all";
+      if (fecha) url = `/api/presentaciones/date/${fecha}`;
+      else if (lugar) url = `/api/presentaciones/location/${encodeURIComponent(lugar)}`;
+      else if (asist) url = `/api/presentaciones/assistance/${asist}`;
+
+      const data = await apiFetch(url);
+      presentaciones = Array.isArray(data) ? data : [data];
+      renderTabla();
+      updateStats();
+    } catch(e) {
+      document.getElementById("presBody").innerHTML =
+        `<tr><td colspan="6" style="padding:1rem;color:var(--rojo)">${e.message}</td></tr>`;
+    }
+  }
+
+  function updateStats() {
+    document.getElementById("statTotal").textContent = presentaciones.length;
+    document.getElementById("statAsist").textContent = presentaciones.filter(p =>
+      (p.assistance||p.asistencia||"").toLowerCase().includes("pres")).length;
+    document.getElementById("statAus").textContent = presentaciones.filter(p =>
+      (p.assistance||p.asistencia||"").toLowerCase().includes("aus")).length;
+  }
+
+  function renderTabla() {
+    const tbody = document.getElementById("presBody");
+    if (!presentaciones.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding:1.5rem;text-align:center;color:var(--texto-suave)">No hay presentaciones registradas</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = presentaciones.map((p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${p.date || p.fecha}</td>
+        <td>${p.location || p.lugar || "—"}</td>
+        <td>${p.integrante?.name || p.integrante?.nombre || "—"}</td>
+        <td>${badgeAsist(p.assistance || p.asistencia)}</td>
+        <td style="display:flex;gap:0.4rem">
+          <button class="btn-secondary btn-sm" onclick="editarPres(${p.id})">✏</button>
+          <button class="btn-danger btn-sm"    onclick="eliminarPres(${p.id})">🗑</button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function abrirModal(id) {
+    editingId = id || null;
+    document.getElementById("presModalTitle").textContent = id ? "Editar Presentación" : "Nueva Presentación";
+    document.getElementById("presFormError").classList.add("hidden");
+    if (id) {
+      const p = presentaciones.find(x => x.id === id);
+      document.getElementById("inpPresFecha").value = p.date || p.fecha || "";
+      document.getElementById("inpPresLugar").value = p.location || p.lugar || "";
+      document.getElementById("inpPresAsist").value = p.assistance || p.asistencia || "Presente";
+      document.getElementById("inpPresInt").value   = p.integrante?.id || "";
+    } else {
+      document.getElementById("presForm").reset();
+    }
+    document.getElementById("presModal").classList.remove("hidden");
+  }
+
+  function editarPres(id) { abrirModal(id); }
+  function cerrarModal() { document.getElementById("presModal").classList.add("hidden"); editingId = null; }
+
+  async function guardarPres() {
+    const btn = document.getElementById("btnGuardarPres");
+    const err = document.getElementById("presFormError");
+    err.classList.add("hidden");
+    btn.textContent = "Guardando..."; btn.disabled = true;
+
+    const fecha   = document.getElementById("inpPresFecha").value;
+    const lugar   = document.getElementById("inpPresLugar").value.trim();
+    const integId = document.getElementById("inpPresInt").value;
+    const asist   = document.getElementById("inpPresAsist").value;
+
+    if (!fecha || !lugar || !integId) {
+      err.textContent = "Completá todos los campos.";
+      err.classList.remove("hidden");
+      btn.textContent = "Guardar"; btn.disabled = false;
+      return;
+    }
+
+    const body = {
+      date: fecha,
+      location: lugar,
+      assistance: asist,
+      integrante: { id: parseInt(integId) }
+    };
+
+    try {
+      if (editingId) {
+        await apiFetch(`/api/presentaciones/${editingId}`, { method: "PUT", body: JSON.stringify(body) });
+      } else {
+        await apiFetch("/api/presentaciones/save", { method: "POST", body: JSON.stringify(body) });
+      }
+      cerrarModal();
+      mostrarAlerta("Presentación guardada ✓", "success");
+      cargarPresentaciones();
+    } catch(e) {
+      err.textContent = e.message; err.classList.remove("hidden");
+    }
+    btn.textContent = "Guardar"; btn.disabled = false;
+  }
+
+  async function eliminarPres(id) {
+    if (!confirm("¿Eliminar esta presentación?")) return;
+    try {
+      await apiFetch(`/api/presentaciones/${id}`, { method: "DELETE" });
+      mostrarAlerta("Presentación eliminada ✓", "success");
+      cargarPresentaciones();
+    } catch(e) { mostrarAlerta(e.message, "error"); }
+  }
+
+  function mostrarAlerta(msg, tipo) {
+    const el = document.getElementById("alertaPres");
+    el.className = tipo === "success" ? "success-msg" : "error-msg";
+    el.textContent = msg;
+    setTimeout(() => el.className = "", 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>

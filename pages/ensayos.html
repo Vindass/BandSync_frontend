@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ensayos – BandSync BCO</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+</head>
+<body>
+
+<script src="../js/api.js"></script>
+<script src="../js/navbar.js"></script>
+<script>
+  requireAuth();
+  document.addEventListener("DOMContentLoaded", () => injectNavbar("ensayos"));
+</script>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <h2>Gestión de Ensayos</h2>
+    <p>Registrá, editá y consultá los ensayos de cada sección</p>
+  </div>
+
+  <!-- Filtros y acción -->
+  <div class="search-bar">
+    <select id="filtroSeccion">
+      <option value="">Todas las secciones</option>
+      <option value="Bronces">Bronces</option>
+      <option value="Maderas">Maderas</option>
+      <option value="Percusión">Percusión</option>
+    </select>
+    <select id="filtroAsist">
+      <option value="">Toda asistencia</option>
+      <option value="Presente">Presente</option>
+      <option value="Ausente">Ausente</option>
+      <option value="Tardanza">Tardanza</option>
+    </select>
+    <input type="date" id="filtroFecha" placeholder="Fecha"/>
+    <button class="btn-secondary btn-sm" onclick="cargarEnsayos()">🔍 Filtrar</button>
+    <button class="btn-gold" onclick="abrirModal()">+ Nuevo ensayo</button>
+  </div>
+
+  <div id="alertaEnsayo"></div>
+
+  <div class="card">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Fecha</th><th>Sección</th><th>Integrante</th><th>Asistencia</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="ensayosBody">
+          <tr><td colspan="6"><div class="spinner">Cargando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear/editar ensayo -->
+<div class="modal-overlay hidden" id="ensayoModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nuevo Ensayo</h3>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+
+    <form id="ensayoForm">
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="inpFecha" required/>
+      </div>
+      <div class="form-group">
+        <label>Sección</label>
+        <select id="inpSeccion" required>
+          <option value="">Seleccioná una sección</option>
+          <option value="Bronces">Bronces</option>
+          <option value="Maderas">Maderas</option>
+          <option value="Percusión">Percusión</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Integrante</label>
+        <select id="inpIntegrante" required>
+          <option value="">Cargando integrantes...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Asistencia</label>
+        <select id="inpAsistencia" required>
+          <option value="Presente">Presente</option>
+          <option value="Ausente">Ausente</option>
+          <option value="Tardanza">Tardanza</option>
+        </select>
+      </div>
+      <div id="formError" class="error-msg hidden"></div>
+    </form>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarEnsayo()" id="btnGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let ensayos = [];
+  let integrantes = [];
+  let editingId = null;
+
+  async function init() {
+    // cargar integrantes para el select
+    try {
+      integrantes = await apiFetch("/api/integrantes") || [];
+      const sel = document.getElementById("inpIntegrante");
+      sel.innerHTML = `<option value="">Seleccioná un integrante</option>` +
+        integrantes.map(i => `<option value="${i.id}">${i.name || i.nombre}</option>`).join("");
+    } catch(e) {
+      console.warn("Error cargando integrantes:", e.message);
+    }
+    cargarEnsayos();
+  }
+
+  async function cargarEnsayos() {
+    const seccion = document.getElementById("filtroSeccion").value;
+    const asist   = document.getElementById("filtroAsist").value;
+    const fecha   = document.getElementById("filtroFecha").value;
+
+    document.getElementById("ensayosBody").innerHTML =
+      `<tr><td colspan="6"><div class="spinner">Cargando...</div></td></tr>`;
+
+    try {
+      let url = "/api/ensayos/all";
+      if (seccion) url = `/api/ensayos/section/${seccion}`;
+      else if (asist) url = `/api/ensayos/asistencia/${asist}`;
+      else if (fecha) url = `/api/ensayos/date/${fecha}`;
+
+      ensayos = await apiFetch(url) || [];
+      renderTabla();
+    } catch(e) {
+      document.getElementById("ensayosBody").innerHTML =
+        `<tr><td colspan="6" style="color:var(--rojo);padding:1rem">${e.message}</td></tr>`;
+    }
+  }
+
+  function renderTabla() {
+    const tbody = document.getElementById("ensayosBody");
+    if (!ensayos.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding:1.5rem;text-align:center;color:var(--texto-suave)">No hay ensayos registrados</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = ensayos.map((e, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${e.date || e.fecha}</td>
+        <td>${badgeSec(e.section || e.seccion)}</td>
+        <td>${e.integrante?.name || e.integrante?.nombre || "—"}</td>
+        <td>${badgeAsist(e.assistance || e.asistencia)}</td>
+        <td style="display:flex;gap:0.4rem;">
+          <button class="btn-secondary btn-sm" onclick="editarEnsayo(${e.id})">✏ Editar</button>
+          <button class="btn-danger btn-sm"    onclick="eliminarEnsayo(${e.id})">🗑</button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function abrirModal(id) {
+    editingId = id || null;
+    document.getElementById("modalTitle").textContent = id ? "Editar Ensayo" : "Nuevo Ensayo";
+    document.getElementById("formError").classList.add("hidden");
+
+    if (id) {
+      const e = ensayos.find(x => x.id === id);
+      document.getElementById("inpFecha").value      = e.date || e.fecha || "";
+      document.getElementById("inpSeccion").value    = e.section || e.seccion || "";
+      document.getElementById("inpAsistencia").value = e.assistance || e.asistencia || "Presente";
+      document.getElementById("inpIntegrante").value = e.integrante?.id || "";
+    } else {
+      document.getElementById("ensayoForm").reset();
+    }
+    document.getElementById("ensayoModal").classList.remove("hidden");
+  }
+
+  function editarEnsayo(id) { abrirModal(id); }
+
+  function cerrarModal() {
+    document.getElementById("ensayoModal").classList.add("hidden");
+    editingId = null;
+  }
+
+  async function guardarEnsayo() {
+    const btn = document.getElementById("btnGuardar");
+    const err = document.getElementById("formError");
+    err.classList.add("hidden");
+    btn.textContent = "Guardando..."; btn.disabled = true;
+
+    const fecha      = document.getElementById("inpFecha").value;
+    const seccion    = document.getElementById("inpSeccion").value;
+    const integId    = document.getElementById("inpIntegrante").value;
+    const asistencia = document.getElementById("inpAsistencia").value;
+
+    if (!fecha || !seccion || !integId) {
+      err.textContent = "Completá todos los campos.";
+      err.classList.remove("hidden");
+      btn.textContent = "Guardar"; btn.disabled = false;
+      return;
+    }
+
+    const body = {
+      date: fecha,
+      section: seccion,
+      assistance: asistencia,
+      integrante: { id: parseInt(integId) }
+    };
+
+    try {
+      if (editingId) {
+        await apiFetch(`/api/ensayos/${editingId}`, { method: "PUT", body: JSON.stringify(body) });
+      } else {
+        await apiFetch("/api/ensayos/save", { method: "POST", body: JSON.stringify(body) });
+      }
+      cerrarModal();
+      mostrarAlerta("Ensayo guardado correctamente ✓", "success");
+      cargarEnsayos();
+    } catch(e) {
+      err.textContent = e.message;
+      err.classList.remove("hidden");
+    }
+    btn.textContent = "Guardar"; btn.disabled = false;
+  }
+
+  async function eliminarEnsayo(id) {
+    if (!confirm("¿Eliminar este ensayo?")) return;
+    try {
+      await apiFetch(`/api/ensayos/${id}`, { method: "DELETE" });
+      mostrarAlerta("Ensayo eliminado ✓", "success");
+      cargarEnsayos();
+    } catch(e) {
+      mostrarAlerta(e.message, "error");
+    }
+  }
+
+  function mostrarAlerta(msg, tipo) {
+    const el = document.getElementById("alertaEnsayo");
+    el.className = tipo === "success" ? "success-msg" : "error-msg";
+    el.textContent = msg;
+    el.classList.remove("hidden");
+    setTimeout(() => el.classList.add("hidden"), 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>

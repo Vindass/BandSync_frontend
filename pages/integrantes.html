@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Integrantes – BandSync BCO</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+</head>
+<body>
+
+<script src="../js/api.js"></script>
+<script src="../js/navbar.js"></script>
+<script>
+  requireAuth();
+  document.addEventListener("DOMContentLoaded", () => injectNavbar("integrantes"));
+</script>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <h2>Integrantes</h2>
+    <p>Administrá los músicos de la Banda Comunal de Orotina</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="buscarNombre" placeholder="Buscar por nombre…"/>
+    <select id="filtroTipo">
+      <option value="">Todos los roles</option>
+      <option value="Administrador">Administrador</option>
+      <option value="Director">Director</option>
+      <option value="Músico">Músico</option>
+    </select>
+    <select id="filtroSeccionI">
+      <option value="">Todas las secciones</option>
+      <option value="Bronces">Bronces</option>
+      <option value="Maderas">Maderas</option>
+      <option value="Percusión">Percusión</option>
+    </select>
+    <button class="btn-secondary btn-sm" onclick="cargarIntegrantes()">🔍 Buscar</button>
+    <button class="btn-gold" onclick="abrirModal()">+ Nuevo integrante</button>
+  </div>
+
+  <div id="alertaInt"></div>
+
+  <div class="card">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Nombre</th><th>Correo</th><th>Edad</th><th>Rol</th><th>Sección</th><th>Instrumento</th><th>Acciones</th></tr>
+        </thead>
+        <tbody id="integrantesBody">
+          <tr><td colspan="8"><div class="spinner">Cargando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="intModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="intModalTitle">Nuevo Integrante</h3>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <form id="intForm">
+      <div class="form-group">
+        <label>Nombre completo</label>
+        <input type="text" id="inpNombre" required placeholder="Ej: Juan Pérez"/>
+      </div>
+      <div class="form-group">
+        <label>Correo institucional</label>
+        <input type="email" id="inpEmail" required placeholder="usuario@bco.or.cr"/>
+      </div>
+      <div id="pwdGroup" class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="inpPass" placeholder="Mín. 8 chars, mayúsculas, números, símbolos"/>
+      </div>
+      <div class="form-group">
+        <label>Edad</label>
+        <input type="number" id="inpEdad" required min="15" max="65" placeholder="15-65"/>
+      </div>
+      <div class="form-group">
+        <label>Rol</label>
+        <select id="inpRol" required>
+          <option value="">Seleccioná</option>
+          <option value="Músico">Músico</option>
+          <option value="Director">Director</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sección</label>
+        <select id="inpSeccionI" required>
+          <option value="">Seleccioná</option>
+          <option value="Bronces">Bronces</option>
+          <option value="Maderas">Maderas</option>
+          <option value="Percusión">Percusión</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Instrumento (opcional)</label>
+        <select id="inpInstrumento">
+          <option value="">Sin instrumento</option>
+        </select>
+      </div>
+      <div id="intFormError" class="error-msg hidden"></div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary"   onclick="guardarIntegrante()" id="btnGuardarInt">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let integrantes = [];
+  let instrumentos = [];
+  let editingId = null;
+
+  async function init() {
+    try {
+      instrumentos = await apiFetch("/api/instrumentos") || [];
+      const sel = document.getElementById("inpInstrumento");
+      sel.innerHTML = `<option value="">Sin instrumento</option>` +
+        instrumentos.map(i => `<option value="${i.id}">${i.name || i.nombre}</option>`).join("");
+    } catch(e) { console.warn(e.message); }
+    cargarIntegrantes();
+  }
+
+  async function cargarIntegrantes() {
+    const nombre  = document.getElementById("buscarNombre").value.trim();
+    const tipo    = document.getElementById("filtroTipo").value;
+    const seccion = document.getElementById("filtroSeccionI").value;
+
+    document.getElementById("integrantesBody").innerHTML =
+      `<tr><td colspan="8"><div class="spinner">Cargando...</div></td></tr>`;
+
+    try {
+      let url = "/api/integrantes";
+      if (nombre)  url = `/api/integrantes/name/${encodeURIComponent(nombre)}`;
+      else if (tipo)    url = `/api/integrantes/type/${encodeURIComponent(tipo)}`;
+      else if (seccion) url = `/api/integrantes/section/${encodeURIComponent(seccion)}`;
+
+      const data = await apiFetch(url);
+      integrantes = Array.isArray(data) ? data : [data];
+      renderTabla();
+    } catch(e) {
+      document.getElementById("integrantesBody").innerHTML =
+        `<tr><td colspan="8" style="padding:1rem;color:var(--rojo)">${e.message}</td></tr>`;
+    }
+  }
+
+  function renderTabla() {
+    const tbody = document.getElementById("integrantesBody");
+    if (!integrantes.length) {
+      tbody.innerHTML = `<tr><td colspan="8" style="padding:1.5rem;text-align:center;color:var(--texto-suave)">No se encontraron integrantes</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = integrantes.map((p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td><strong>${p.name || p.nombre}</strong></td>
+        <td>${p.email || p.correoElectronico || "—"}</td>
+        <td>${p.age || p.edad}</td>
+        <td>${p.type || p.rol || "—"}</td>
+        <td>${badgeSec(p.section || p.seccion)}</td>
+        <td>${p.instrument?.name || p.instrumento?.nombre || "—"}</td>
+        <td style="display:flex;gap:0.4rem">
+          <button class="btn-secondary btn-sm" onclick="editarInt(${p.id})">✏</button>
+          <button class="btn-danger btn-sm"    onclick="eliminarInt(${p.id})">🗑</button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function abrirModal(id) {
+    editingId = id || null;
+    document.getElementById("intModalTitle").textContent = id ? "Editar Integrante" : "Nuevo Integrante";
+    document.getElementById("intFormError").classList.add("hidden");
+    document.getElementById("pwdGroup").style.display = id ? "none" : "block";
+
+    if (id) {
+      const p = integrantes.find(x => x.id === id);
+      document.getElementById("inpNombre").value      = p.name || p.nombre || "";
+      document.getElementById("inpEmail").value       = p.email || "";
+      document.getElementById("inpEdad").value        = p.age || p.edad || "";
+      document.getElementById("inpRol").value         = p.type || p.rol || "";
+      document.getElementById("inpSeccionI").value    = p.section || p.seccion || "";
+      document.getElementById("inpInstrumento").value = p.instrument?.id || p.instrumento?.id || "";
+    } else {
+      document.getElementById("intForm").reset();
+    }
+    document.getElementById("intModal").classList.remove("hidden");
+  }
+
+  function editarInt(id) { abrirModal(id); }
+  function cerrarModal() { document.getElementById("intModal").classList.add("hidden"); editingId = null; }
+
+  async function guardarIntegrante() {
+    const btn = document.getElementById("btnGuardarInt");
+    const err = document.getElementById("intFormError");
+    err.classList.add("hidden");
+    btn.textContent = "Guardando..."; btn.disabled = true;
+
+    const nombre   = document.getElementById("inpNombre").value.trim();
+    const email    = document.getElementById("inpEmail").value.trim();
+    const pass     = document.getElementById("inpPass").value;
+    const edad     = parseInt(document.getElementById("inpEdad").value);
+    const rol      = document.getElementById("inpRol").value;
+    const seccion  = document.getElementById("inpSeccionI").value;
+    const instrId  = document.getElementById("inpInstrumento").value;
+
+    const body = {
+      name: nombre, email, age: edad, type: rol, section: seccion,
+      ...(instrId ? { instrument: { id: parseInt(instrId) } } : {}),
+      ...(!editingId && pass ? { password: pass } : {})
+    };
+
+    try {
+      if (editingId) {
+        await apiFetch(`/api/integrantes/${editingId}`, { method: "PUT", body: JSON.stringify(body) });
+      } else {
+        await apiFetch("/api/integrantes", { method: "POST", body: JSON.stringify(body) });
+      }
+      cerrarModal();
+      mostrarAlerta("Integrante guardado ✓", "success");
+      cargarIntegrantes();
+    } catch(e) {
+      err.textContent = e.message;
+      err.classList.remove("hidden");
+    }
+    btn.textContent = "Guardar"; btn.disabled = false;
+  }
+
+  async function eliminarInt(id) {
+    if (!confirm("¿Eliminar este integrante?")) return;
+    try {
+      await apiFetch(`/api/integrantes/${id}`, { method: "DELETE" });
+      mostrarAlerta("Integrante eliminado ✓", "success");
+      cargarIntegrantes();
+    } catch(e) { mostrarAlerta(e.message, "error"); }
+  }
+
+  function mostrarAlerta(msg, tipo) {
+    const el = document.getElementById("alertaInt");
+    el.className = tipo === "success" ? "success-msg" : "error-msg";
+    el.textContent = msg;
+    setTimeout(() => el.className = "", 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>
