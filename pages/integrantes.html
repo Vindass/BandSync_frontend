@@ -1,113 +1,323 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Integrantes – BandSync BCO</title>
-  <link rel="stylesheet" href="../css/styles.css"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrantes - BandSync BCO</title>
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
 
+<div class="page-wrapper">
+
+    <div class="page-header">
+        <h2>Integrantes</h2>
+        <p>Administración de integrantes de la Banda Comunal de Orotina</p>
+    </div>
+
+    <div class="search-bar">
+
+        <input
+                type="text"
+                id="buscarNombre"
+                placeholder="Buscar por nombre">
+
+        <select id="filtroTipo">
+
+            <option value="">
+                Todos los roles
+            </option>
+
+            <option value="ADMIN">
+                Administrador
+            </option>
+
+            <option value="INTEGRANTE">
+                Integrante
+            </option>
+
+        </select>
+
+        <select id="filtroSeccionI">
+
+            <option value="">
+                Todas las secciones
+            </option>
+
+            <option value="Administracion">
+                Administración
+            </option>
+
+            <option value="Bronces">
+                Bronces
+            </option>
+
+            <option value="Maderas">
+                Maderas
+            </option>
+
+            <option value="Percusión">
+                Percusión
+            </option>
+
+        </select>
+
+        <button
+                class="btn-secondary btn-sm"
+                onclick="cargarIntegrantes()">
+
+            🔍 Buscar
+
+        </button>
+
+        <button
+                class="btn-gold"
+                id="btnNuevoIntegrante">
+
+            + Nuevo integrante
+
+        </button>
+
+    </div>
+
+    <div id="alertaInt"></div>
+
+    <div class="card">
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                <tr>
+
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Edad</th>
+                    <th>Rol</th>
+                    <th>Sección</th>
+                    <th>Instrumento</th>
+                    <th>Acciones</th>
+
+                </tr>
+
+                </thead>
+
+                <tbody id="integrantesBody">
+
+                <tr>
+
+                    <td colspan="8">
+
+                        <div class="spinner">
+                            Cargando integrantes...
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div
+        class="modal-overlay hidden"
+        id="intModal">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <h3 id="intModalTitle">
+                Nuevo Integrante
+            </h3>
+
+            <button
+                    class="modal-close"
+                    onclick="cerrarModal()">
+
+                ×
+
+            </button>
+
+        </div>
+
+        <form id="intForm">
+
+            <div class="form-group">
+
+                <label>
+                    Nombre completo
+                </label>
+
+                <input
+                        type="text"
+                        id="inpNombre"
+                        required>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    Correo electrónico
+                </label>
+
+                <input
+                        type="email"
+                        id="inpEmail"
+                        required>
+
+            </div>
+
+            <div
+                    id="pwdGroup"
+                    class="form-group">
+
+                <label>
+                    Contraseña
+                </label>
+
+                <input
+                        type="password"
+                        id="inpPass">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    Edad
+                </label>
+
+                <input
+                        type="number"
+                        id="inpEdad"
+                        min="15"
+                        max="65"
+                        required>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    Rol
+                </label>
+
+                <select
+                        id="inpRol"
+                        required>
+
+                    <option value="">
+                        Seleccione
+                    </option>
+
+                    <option value="Administrador">
+                        Administrador
+                    </option>
+
+                    <option value="Integrante">
+                        Integrante
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    Sección
+                </label>
+
+                <select
+                        id="inpSeccionI"
+                        required>
+
+                    <option value="">
+                        Seleccione
+                    </option>
+
+                    <option value="Administracion">
+                        Administración
+                    </option>
+
+                    <option value="Bronces">
+                        Bronces
+                    </option>
+
+                    <option value="Maderas">
+                        Maderas
+                    </option>
+
+                    <option value="Percusión">
+                        Percusión
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+                    Instrumento
+                </label>
+
+                <select id="inpInstrumento">
+
+                    <option value="">
+                        Sin instrumento
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div
+                    id="intFormError"
+                    class="error-msg hidden">
+
+            </div>
+
+        </form>
+
+        <div class="modal-footer">
+
+            <button
+                    class="btn-secondary"
+                    onclick="cerrarModal()">
+
+                Cancelar
+
+            </button>
+
+            <button
+                    class="btn-primary"
+                    id="btnGuardarInt"
+                    onclick="guardarIntegrante()">
+
+                Guardar
+
+            </button>
+
+        </div>
+
+    </div>
+    
+</div>
 <script src="../js/api.js"></script>
 <script src="../js/navbar.js"></script>
-<script>
-  requireAuth();
-  document.addEventListener("DOMContentLoaded", () => injectNavbar("integrantes"));
-</script>
-
-<div class="page-wrapper">
-  <div class="page-header">
-    <h2>Integrantes</h2>
-    <p>Administrá los músicos de la Banda Comunal de Orotina</p>
-  </div>
-
-  <div class="search-bar">
-    <input type="text" id="buscarNombre" placeholder="Buscar por nombre…"/>
-    <select id="filtroTipo">
-      <option value="">Todos los roles</option>
-      <option value="Administrador">Administrador</option>
-      <option value="Integrantes">Integrantes</option>
-    </select>
-    <select id="filtroSeccionI">
-      <option value="">Todas las secciones</option>
-      <option value="Bronces">Bronces</option>
-      <option value="Maderas">Maderas</option>
-      <option value="Percusión">Percusión</option>
-    </select>
-    <button class="btn-secondary btn-sm" onclick="cargarIntegrantes()">🔍 Buscar</button>
-    <button class="btn-gold" onclick="abrirModal()">+ Nuevo integrante</button>
-  </div>
-
-  <div id="alertaInt"></div>
-
-  <div class="card">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr><th>#</th><th>Nombre</th><th>Correo</th><th>Edad</th><th>Rol</th><th>Sección</th><th>Instrumento</th><th>Acciones</th></tr>
-        </thead>
-        <tbody id="integrantesBody">
-          <tr><td colspan="8"><div class="spinner">Cargando...</div></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- Modal -->
-<div class="modal-overlay hidden" id="intModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="intModalTitle">Nuevo Integrante</h3>
-      <button class="modal-close" onclick="cerrarModal()">×</button>
-    </div>
-    <form id="intForm">
-      <div class="form-group">
-        <label>Nombre completo</label>
-        <input type="text" id="inpNombre" required placeholder="Ej: Juan Pérez"/>
-      </div>
-      <div class="form-group">
-        <label>Correo institucional</label>
-        <input type="email" id="inpEmail" required placeholder="usuario@bco.or.cr"/>
-      </div>
-      <div id="pwdGroup" class="form-group">
-        <label>Contraseña</label>
-        <input type="password" id="inpPass" placeholder="Mín. 8 chars, mayúsculas, números, símbolos"/>
-      </div>
-      <div class="form-group">
-        <label>Edad</label>
-        <input type="number" id="inpEdad" required min="15" max="65" placeholder="15-65"/>
-      </div>
-      <div class="form-group">
-        <label>Rol</label>
-        <select id="inpRol" required>
-          <option value="">Seleccioná</option>
-          <option value="Administrador">Administrador</option>
-          <option value="Integrante">Integrante</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Sección</label>
-        <select id="inpSeccionI" required>
-          <option value="">Seleccioná</option>
-          <option value="Administracion">Administración</option>
-          <option value="Bronces">Bronces</option>
-          <option value="Maderas">Maderas</option>
-          <option value="Percusión">Percusión</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Instrumento (opcional)</label>
-        <select id="inpInstrumento">
-          <option value="">Sin instrumento</option>
-        </select>
-      </div>
-      <div id="intFormError" class="error-msg hidden"></div>
-    </form>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-primary"   onclick="guardarIntegrante()" id="btnGuardarInt">Guardar</button>
-    </div>
-  </div>
-</div>
-
+<script src="../js/integrantes.js"></script>
+</body>
+</html>
