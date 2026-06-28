@@ -44,6 +44,8 @@ async function apiFetch(
     options = {}
 ) {
 
+    console.log("URL:", API_BASE + endpoint);
+
     const response =
     await fetch(
         API_BASE + endpoint,
