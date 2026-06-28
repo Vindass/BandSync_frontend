@@ -33,10 +33,19 @@
     <div class="table-wrapper">
       <table>
         <thead>
-          <tr><th>#</th><th>Nombre</th><th>Cantidad</th><th>Descripción</th><th>Acciones</th></tr>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Cantidad</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody id="instBody">
-          <tr><td colspan="5"><div class="spinner">Cargando...</div></td></tr>
+          <tr>
+            <td colspan="4">
+              <div class="spinner">Cargando...</div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -50,130 +59,329 @@
       <h3 id="instModalTitle">Nuevo Instrumento</h3>
       <button class="modal-close" onclick="cerrarModal()">×</button>
     </div>
+
     <form id="instForm">
       <div class="form-group">
         <label>Nombre del instrumento</label>
-        <input type="text" id="inpInstNombre" required placeholder="Ej: Trompeta"/>
+        <input
+          type="text"
+          id="inpInstNombre"
+          required
+          placeholder="Ej: Trompeta"/>
       </div>
+
       <div class="form-group">
         <label>Cantidad</label>
-        <input type="number" id="inpInstCant" required min="1" placeholder="1"/>
+        <input
+          type="number"
+          id="inpInstCant"
+          required
+          min="1"
+          placeholder="1"/>
       </div>
-      <div class="form-group">
-        <label>Descripción (opcional)</label>
-        <textarea id="inpInstDesc" rows="3" placeholder="Notas adicionales…" style="resize:vertical"></textarea>
-      </div>
+
       <div id="instFormError" class="error-msg hidden"></div>
     </form>
+
     <div class="modal-footer">
-      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-primary"   onclick="guardarInst()" id="btnGuardarInst">Guardar</button>
+      <button class="btn-secondary" onclick="cerrarModal()">
+        Cancelar
+      </button>
+
+      <button
+        class="btn-primary"
+        onclick="guardarInst()"
+        id="btnGuardarInst">
+        Guardar
+      </button>
     </div>
   </div>
 </div>
 
 <script>
+
   let instrumentos = [];
   let editingId = null;
 
   async function cargarInst() {
-    const nombre = document.getElementById("buscarInst").value.trim();
+
+    const nombre =
+      document.getElementById("buscarInst")
+      .value
+      .trim();
+
     document.getElementById("instBody").innerHTML =
-      `<tr><td colspan="5"><div class="spinner">Cargando...</div></td></tr>`;
+      `<tr>
+          <td colspan="4">
+            <div class="spinner">Cargando...</div>
+          </td>
+       </tr>`;
+
     try {
+
       let url = "/api/instrumentos";
-      if (nombre) url = `/api/instrumentos/name/${encodeURIComponent(nombre)}`;
-      const data = await apiFetch(url);
-      instrumentos = Array.isArray(data) ? data : [data];
+
+      if (nombre) {
+        url =
+          `/api/instrumentos/name/${encodeURIComponent(nombre)}`;
+      }
+
+      const data =
+        await apiFetch(url);
+
+      instrumentos =
+        Array.isArray(data)
+          ? data
+          : [data];
+
       renderTabla();
+
     } catch(e) {
+
       document.getElementById("instBody").innerHTML =
-        `<tr><td colspan="5" style="padding:1rem;color:var(--rojo)">${e.message}</td></tr>`;
+        `<tr>
+            <td colspan="4"
+                style="padding:1rem;color:var(--rojo)">
+                ${e.message}
+            </td>
+         </tr>`;
     }
   }
 
   function renderTabla() {
-    const tbody = document.getElementById("instBody");
+
+    const tbody =
+      document.getElementById("instBody");
+
     if (!instrumentos.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="padding:1.5rem;text-align:center;color:var(--texto-suave)">No hay instrumentos registrados</td></tr>`;
+
+      tbody.innerHTML =
+        `<tr>
+            <td colspan="4"
+                style="padding:1.5rem;text-align:center;color:var(--texto-suave)">
+                No hay instrumentos registrados
+            </td>
+         </tr>`;
+
       return;
     }
-    tbody.innerHTML = instrumentos.map((inst, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td><strong>${inst.name || inst.nombre}</strong></td>
-        <td><span class="badge" style="background:var(--gris-bg);color:var(--marino)">${inst.quantity || inst.cantidad || 1}</span></td>
-        <td>${inst.description || inst.descripcion || "—"}</td>
-        <td style="display:flex;gap:0.4rem">
-          <button class="btn-secondary btn-sm" onclick="editarInst(${inst.id})">✏ Editar</button>
-          <button class="btn-danger btn-sm"    onclick="eliminarInst(${inst.id}, ${inst.quantity || 1})">🗑</button>
-        </td>
-      </tr>
-    `).join("");
+
+    tbody.innerHTML =
+      instrumentos.map((inst, i) => `
+
+        <tr>
+
+          <td>${i + 1}</td>
+
+          <td>
+            <strong>
+              ${inst.name || inst.nombre}
+            </strong>
+          </td>
+
+          <td>
+            <span
+              class="badge"
+              style="background:var(--gris-bg);color:var(--marino)">
+              ${inst.quantity || inst.cantidad || 1}
+            </span>
+          </td>
+
+          <td style="display:flex;gap:0.4rem">
+
+            <button
+              class="btn-secondary btn-sm"
+              onclick="editarInst(${inst.id})">
+              ✏ Editar
+            </button>
+
+            <button
+              class="btn-danger btn-sm"
+              onclick="eliminarInst(${inst.id}, ${inst.quantity || 1})">
+              🗑
+            </button>
+
+          </td>
+
+        </tr>
+
+      `).join("");
   }
 
   function abrirModal(id) {
+
     editingId = id || null;
-    document.getElementById("instModalTitle").textContent = id ? "Editar Instrumento" : "Nuevo Instrumento";
-    document.getElementById("instFormError").classList.add("hidden");
+
+    document.getElementById("instModalTitle")
+      .textContent =
+      id
+        ? "Editar Instrumento"
+        : "Nuevo Instrumento";
+
+    document.getElementById("instFormError")
+      .classList
+      .add("hidden");
+
     if (id) {
-      const inst = instrumentos.find(x => x.id === id);
-      document.getElementById("inpInstNombre").value = inst.name || inst.nombre || "";
-      document.getElementById("inpInstCant").value   = inst.quantity || inst.cantidad || 1;
-      document.getElementById("inpInstDesc").value   = inst.description || inst.descripcion || "";
+
+      const inst =
+        instrumentos.find(
+          x => x.id === id
+        );
+
+      document.getElementById("inpInstNombre").value =
+        inst.name || inst.nombre || "";
+
+      document.getElementById("inpInstCant").value =
+        inst.quantity || inst.cantidad || 1;
+
     } else {
+
       document.getElementById("instForm").reset();
     }
-    document.getElementById("instModal").classList.remove("hidden");
+
+    document.getElementById("instModal")
+      .classList
+      .remove("hidden");
   }
 
-  function editarInst(id) { abrirModal(id); }
-  function cerrarModal() { document.getElementById("instModal").classList.add("hidden"); editingId = null; }
+  function editarInst(id) {
+    abrirModal(id);
+  }
+
+  function cerrarModal() {
+
+    document.getElementById("instModal")
+      .classList
+      .add("hidden");
+
+    editingId = null;
+  }
 
   async function guardarInst() {
-    const btn = document.getElementById("btnGuardarInst");
-    const err = document.getElementById("instFormError");
+
+    const btn =
+      document.getElementById("btnGuardarInst");
+
+    const err =
+      document.getElementById("instFormError");
+
     err.classList.add("hidden");
-    btn.textContent = "Guardando..."; btn.disabled = true;
 
-    const nombre = document.getElementById("inpInstNombre").value.trim();
-    const cant   = parseInt(document.getElementById("inpInstCant").value);
-    const desc   = document.getElementById("inpInstDesc").value.trim();
+    btn.textContent = "Guardando...";
+    btn.disabled = true;
 
-    const body = { name: nombre, quantity: cant, description: desc };
+    const nombre =
+      document.getElementById("inpInstNombre")
+      .value
+      .trim();
+
+    const cant =
+      parseInt(
+        document.getElementById("inpInstCant")
+        .value
+      );
+
+    const body = {
+      name: nombre,
+      quantity: cant
+    };
 
     try {
+
       if (editingId) {
-        await apiFetch(`/api/instrumentos/${editingId}`, { method: "PUT", body: JSON.stringify(body) });
+
+        await apiFetch(
+          `/api/instrumentos/${editingId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(body)
+          }
+        );
+
       } else {
-        await apiFetch("/api/instrumentos", { method: "POST", body: JSON.stringify(body) });
+
+        await apiFetch(
+          "/api/instrumentos",
+          {
+            method: "POST",
+            body: JSON.stringify(body)
+          }
+        );
       }
+
       cerrarModal();
-      mostrarAlerta("Instrumento guardado ✓", "success");
+
+      mostrarAlerta(
+        "Instrumento guardado ✓",
+        "success"
+      );
+
       cargarInst();
+
     } catch(e) {
-      err.textContent = e.message; err.classList.remove("hidden");
+
+      err.textContent =
+        e.message;
+
+      err.classList.remove("hidden");
     }
-    btn.textContent = "Guardar"; btn.disabled = false;
+
+    btn.textContent = "Guardar";
+    btn.disabled = false;
   }
 
   async function eliminarInst(id, qty) {
-    if (!confirm("¿Eliminar este instrumento?")) return;
+
+    if (!confirm("¿Eliminar este instrumento?")) {
+      return;
+    }
+
     try {
-      await apiFetch(`/api/instrumentos/${id}/${qty}`, { method: "DELETE" });
-      mostrarAlerta("Instrumento eliminado ✓", "success");
+
+      await apiFetch(
+        `/api/instrumentos/${id}/${qty}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      mostrarAlerta(
+        "Instrumento eliminado ✓",
+        "success"
+      );
+
       cargarInst();
-    } catch(e) { mostrarAlerta(e.message, "error"); }
+
+    } catch(e) {
+
+      mostrarAlerta(
+        e.message,
+        "error"
+      );
+    }
   }
 
   function mostrarAlerta(msg, tipo) {
-    const el = document.getElementById("alertaInst");
-    el.className = tipo === "success" ? "success-msg" : "error-msg";
+
+    const el =
+      document.getElementById("alertaInst");
+
+    el.className =
+      tipo === "success"
+        ? "success-msg"
+        : "error-msg";
+
     el.textContent = msg;
-    setTimeout(() => el.className = "", 3500);
+
+    setTimeout(() => {
+      el.className = "";
+    }, 3500);
   }
 
   cargarInst();
+
 </script>
+
 </body>
 </html>
