@@ -1,10 +1,3 @@
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    injectNavbar();
-
-});
-
 function injectNavbar() {
 
     const user = JSON.parse(
@@ -68,5 +61,4 @@ function injectNavbar() {
     `;
 
     document.body.prepend(nav);
-
 }

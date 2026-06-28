@@ -614,3 +614,58 @@ tbody td {
   .cal-day { min-height: 56px; }
   .modal { padding: 1.5rem; }
 }
+.calendar-container{
+    background:white;
+    border-radius:16px;
+    padding:20px;
+}
+
+.calendar-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.calendar-weekdays{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.calendar-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:5px;
+}
+
+.calendar-day{
+    min-height:120px;
+    border:1px solid #ddd;
+    padding:5px;
+}
+
+.day-number{
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+.evento-ensayo{
+    background:#0f7a43;
+    color:white;
+    border-radius:5px;
+    padding:3px;
+    margin-bottom:3px;
+    font-size:12px;
+}
+
+.evento-presentacion{
+    background:#d4a017;
+    color:white;
+    border-radius:5px;
+    padding:3px;
+    margin-bottom:3px;
+    font-size:12px;
+}

@@ -1,7 +1,4 @@
-<!-- calendario.html -->
-
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -12,109 +9,62 @@
 <body>
 
 <script src="../js/api.js"></script>
-
 <script src="../js/navbar.js"></script>
-
 <script src="../js/calendario.js"></script>
 
 <div class="page-wrapper">
 
-```
-<div class="page-header">
-    <h2>Inicio</h2>
-    <p>Calendario general de ensayos y presentaciones</p>
-</div>
+    <div class="calendar-container">
 
-<div class="stats-grid">
+        <div class="calendar-top">
 
-    <div class="stat-card">
-        <div class="stat-label">Eventos del mes</div>
-        <div class="stat-value" id="statMes">—</div>
-    </div>
-
-    <div class="stat-card gold">
-        <div class="stat-label">Ensayos</div>
-        <div class="stat-value" id="statEnsayos">—</div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-label">Presentaciones</div>
-        <div class="stat-value" id="statPresentaciones">—</div>
-    </div>
-
-    <div class="stat-card navy">
-        <div class="stat-label">Próximos eventos</div>
-        <div class="stat-value" id="statProximos">—</div>
-    </div>
-
-</div>
-
-<div class="card">
-
-    <div class="cal-nav">
-
-        <div class="cal-nav-btns">
-            <button class="btn-secondary btn-sm" id="btnPrev">
-                ‹ Anterior
+            <button id="btnPrev" class="btn-secondary">
+                ◀
             </button>
 
-            <button class="btn-secondary btn-sm" id="btnToday">
-                Hoy
+            <h2 id="calendarTitle"></h2>
+
+            <button id="btnNext" class="btn-secondary">
+                ▶
             </button>
 
-            <button class="btn-secondary btn-sm" id="btnNext">
-                Siguiente ›
-            </button>
         </div>
 
-        <h3 id="calTitle"></h3>
+        <div class="calendar-weekdays">
 
-    </div>
+            <div>Dom</div>
+            <div>Lun</div>
+            <div>Mar</div>
+            <div>Mié</div>
+            <div>Jue</div>
+            <div>Vie</div>
+            <div>Sáb</div>
 
-    <div class="calendar-grid" id="calHeader">
-        <div class="cal-day-name">Dom</div>
-        <div class="cal-day-name">Lun</div>
-        <div class="cal-day-name">Mar</div>
-        <div class="cal-day-name">Mié</div>
-        <div class="cal-day-name">Jue</div>
-        <div class="cal-day-name">Vie</div>
-        <div class="cal-day-name">Sáb</div>
-    </div>
-
-    <div class="calendar-grid" id="calBody">
-        <div class="spinner">
-            Cargando calendario...
         </div>
-    </div>
 
-</div>
-```
+        <div id="calendarGrid" class="calendar-grid">
+
+        </div>
+
+    </div>
 
 </div>
 
 <div class="modal-overlay hidden" id="dayModal">
 
-```
-<div class="modal">
+    <div class="modal">
 
-    <div class="modal-header">
-        <h3 id="modalDate">Eventos del día</h3>
+        <div class="modal-header">
+            <h3 id="modalDate"></h3>
 
-        <button class="modal-close" id="btnCloseModal">
-            ×
-        </button>
+            <button id="btnCerrarModal">
+                X
+            </button>
+        </div>
+
+        <div id="modalContent"></div>
+
     </div>
-
-    <div id="modalContent"></div>
-
-    <div class="modal-footer">
-        <button class="btn-secondary" id="btnCerrarModal">
-            Cerrar
-        </button>
-    </div>
-
-</div>
-```
 
 </div>
 

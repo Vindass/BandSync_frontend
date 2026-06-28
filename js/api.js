@@ -1,81 +1,73 @@
-// api.js
-
 const API_BASE =
 "https://bandsync-gic7.onrender.com";
 
 function getUser() {
 
-```
-const raw =
-sessionStorage.getItem("user");
+    const raw =
+    sessionStorage.getItem("user");
 
-if (!raw) {
-    return null;
-}
+    if (!raw) {
+        return null;
+    }
 
-return JSON.parse(raw);
-```
-
+    return JSON.parse(raw);
 }
 
 function requireAuth() {
 
-```
-const user =
-sessionStorage.getItem("user");
+    const user =
+    sessionStorage.getItem("user");
 
-if (!user) {
+    console.log("USER:", user);
 
-    window.location.href =
-    "../index.html";
-}
-```
+    if (!user) {
 
+        alert("No hay sesión");
+
+        window.location.href =
+        "../index.html";
+
+        return;
+    }
 }
 
 function logout() {
 
-```
-sessionStorage.clear();
+    sessionStorage.clear();
 
-window.location.href =
-"../index.html";
-```
-
+    window.location.href =
+    "../index.html";
 }
 
 async function apiFetch(
-endpoint,
-options = {}
+    endpoint,
+    options = {}
 ) {
 
-```
-const response =
-await fetch(
-    API_BASE + endpoint,
-    {
-        headers: {
-            "Content-Type":
-            "application/json"
-        },
-        ...options
+    const response =
+    await fetch(
+        API_BASE + endpoint,
+        {
+            headers: {
+                "Content-Type":
+                "application/json"
+            },
+            ...options
+        }
+    );
+
+    if (!response.ok) {
+
+        const error =
+        await response.text();
+
+        throw new Error(error);
     }
-);
 
-if (!response.ok) {
-
-    const error =
+    const text =
     await response.text();
 
-    throw new Error(error);
-}
-
-const text =
-await response.text();
-
-return text
-    ? JSON.parse(text)
-    : null;
-```
-
+    return text
+        ? JSON.parse(text)
+        : null;
 }
