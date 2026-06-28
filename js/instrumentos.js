@@ -137,50 +137,55 @@ function renderTabla() {
 
     const user = getUser();
 
-    instrumentos.forEach(i => {
+instrumentos.forEach(i => {
 
-        body.innerHTML +=
-        `
-        <tr>
+    body.innerHTML +=
+    `
+    <tr>
 
-            <td>${i.id}</td>
+        <td>${i.id}</td>
 
-            <td>${i.name}</td>
+        <td>${i.name}</td>
 
-            <td>${i.quantity}</td>
+        <td>
+            ${
+                i.quantity === 0
+                ? "❌ Agotado"
+                : i.quantity
+            }
+        </td>
 
-            <td>
+        <td>
 
-                ${
-                    user?.type === "ADMIN"
-                    ?
-                    `
-                    <button
-                        class="btn-primary"
-                        onclick="editarInstrumento(${i.id})">
+            ${
+                user?.type === "ADMIN"
+                ?
+                `
+                <button
+                    class="btn-primary"
+                    onclick="editarInstrumento(${i.id})">
 
-                        Editar
+                    Editar
 
-                    </button>
+                </button>
 
-                    <button
-                        class="btn-danger"
-                        onclick="eliminarInstrumento(${i.id})">
+                <button
+                    class="btn-danger"
+                    onclick="eliminarInstrumento(${i.id})">
 
-                        Eliminar
+                    Retirar
 
-                    </button>
-                    `
-                    :
-                    "-"
-                }
+                </button>
+                `
+                :
+                "-"
+            }
 
-            </td>
+        </td>
 
-        </tr>
-        `;
-    });
-}
+    </tr>
+    `;
+});
 
 function abrirModal() {
 
@@ -217,11 +222,27 @@ function cerrarModal() {
         .classList.add(
             "hidden"
         );
-}
-
-async function guardarInstrumento() {
+        async function guardarInstrumento() {
 
     try {
+
+        const cantidad =
+            Number(
+                document
+                    .getElementById(
+                        "inpCantidad"
+                    )
+                    .value
+            );
+
+        if(cantidad < 0){
+
+            alert(
+                "La cantidad no puede ser negativa"
+            );
+
+            return;
+        }
 
         const body = {
 
@@ -233,13 +254,7 @@ async function guardarInstrumento() {
                 .value,
 
             quantity:
-            Number(
-                document
-                    .getElementById(
-                        "inpCantidad"
-                    )
-                    .value
-            )
+            cantidad
         };
 
         if (editandoId) {
@@ -325,15 +340,63 @@ async function editarInstrumento(id) {
 
 async function eliminarInstrumento(id) {
 
+    const instrumento =
+        instrumentos.find(
+            i => i.id === id
+        );
+
+    if (!instrumento) {
+        return;
+    }
+
+    if (instrumento.quantity === 0) {
+
+        alert(
+            "Este instrumento ya está agotado"
+        );
+
+        return;
+    }
+
     const cantidad =
         prompt(
-            "¿Cuántos instrumentos desea retirar?"
+            `Instrumento: ${instrumento.name}
+
+Disponibles: ${instrumento.quantity}
+
+¿Cuántos desea retirar?`
         );
 
     if (
-        !cantidad ||
-        Number(cantidad) <= 0
+        cantidad === null ||
+        cantidad.trim() === ""
     ) {
+        return;
+    }
+
+    const retirar =
+        Number(cantidad);
+
+    if (
+        isNaN(retirar) ||
+        retirar <= 0
+    ) {
+
+        alert(
+            "Cantidad inválida"
+        );
+
+        return;
+    }
+
+    if (
+        retirar > instrumento.quantity
+    ) {
+
+        alert(
+            `Solo existen ${instrumento.quantity} disponibles`
+        );
+
         return;
     }
 
@@ -341,7 +404,7 @@ async function eliminarInstrumento(id) {
 
         await apiFetch(
 
-            `/api/instrumentos/${id}/${cantidad}`,
+            `/api/instrumentos/${id}/${retirar}`,
 
             {
                 method: "DELETE"
@@ -355,7 +418,6 @@ async function eliminarInstrumento(id) {
         alert(error.message);
     }
 }
-
 window.cargarInstrumentos =
     cargarInstrumentos;
 
@@ -379,3 +441,5 @@ window.abrirModal =
 
 window.cerrarModal =
     cerrarModal;
+}
+}
