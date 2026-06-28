@@ -1,56 +1,81 @@
-const API = "https://bandsync-gic7.onrender.com";
+// api.js
 
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+const API_BASE =
+"https://bandsync-gic7.onrender.com";
 
-  const btn = document.getElementById("loginBtn");
-  const errDiv = document.getElementById("loginError");
+function getUser() {
 
-  errDiv.classList.add("hidden");
-  btn.textContent = "Ingresando...";
-  btn.disabled = true;
+```
+const raw =
+sessionStorage.getItem("user");
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+if (!raw) {
+    return null;
+}
 
-  try {
+return JSON.parse(raw);
+```
 
-    const res = await fetch(`${API}/api/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        email,
-        password
-      })
-    });
+}
 
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(msg || "Credenciales inválidas");
+function requireAuth() {
+
+```
+const user =
+sessionStorage.getItem("user");
+
+if (!user) {
+
+    window.location.href =
+    "../index.html";
+}
+```
+
+}
+
+function logout() {
+
+```
+sessionStorage.clear();
+
+window.location.href =
+"../index.html";
+```
+
+}
+
+async function apiFetch(
+endpoint,
+options = {}
+) {
+
+```
+const response =
+await fetch(
+    API_BASE + endpoint,
+    {
+        headers: {
+            "Content-Type":
+            "application/json"
+        },
+        ...options
     }
+);
 
-    const data = await res.json();
+if (!response.ok) {
 
-    sessionStorage.setItem(
-      "user",
-      JSON.stringify(data)
-    );
+    const error =
+    await response.text();
 
-    sessionStorage.setItem(
-      "token",
-      "authenticated"
-    );
+    throw new Error(error);
+}
 
-    window.location.href = "pages/calendario.html";
+const text =
+await response.text();
 
-  } catch (err) {
+return text
+    ? JSON.parse(text)
+    : null;
+```
 
-    errDiv.textContent = err.message;
-    errDiv.classList.remove("hidden");
-
-    btn.textContent = "Ingresar";
-    btn.disabled = false;
-  }
-});
+}
