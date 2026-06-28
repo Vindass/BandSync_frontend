@@ -33,7 +33,7 @@ h1, h2, h3 {
   font-family: 'Playfair Display', serif;
 }
 
-/* ── LOGIN ─────────────────────────────────────── */
+
 .login-body {
   display: flex;
   align-items: center;
@@ -80,7 +80,6 @@ h1, h2, h3 {
   margin-top: 0.25rem;
 }
 
-/* ── FORMULARIO ─────────────────────────────────── */
 .form-group {
   margin-bottom: 1.2rem;
 }
@@ -116,7 +115,6 @@ h1, h2, h3 {
   border-color: var(--verde);
 }
 
-/* ── BOTONES ─────────────────────────────────────── */
 .btn-primary {
   background: var(--verde);
   color: var(--blanco);
