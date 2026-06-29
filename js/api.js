@@ -3,20 +3,16 @@ const API_BASE =
 
 function getUser() {
 
-    const raw =
-        sessionStorage.getItem("user");
+    const raw = sessionStorage.getItem("user");
 
-    if (!raw) {
-        return null;
-    }
+    if (!raw) return null;
 
     return JSON.parse(raw);
 }
 
 function requireAuth() {
 
-    const user =
-        sessionStorage.getItem("user");
+    const user = sessionStorage.getItem("user");
 
     console.log("USER:", user);
 
@@ -24,8 +20,7 @@ function requireAuth() {
 
         alert("No hay sesión");
 
-        window.location.href =
-            "../index.html";
+        window.location.href = "../index.html";
 
         return;
     }
@@ -35,54 +30,38 @@ function logout() {
 
     sessionStorage.clear();
 
-    window.location.href =
-        "../index.html";
+    window.location.href = "../index.html";
 }
 
-async function apiFetch(
-    endpoint,
-    options = {}
-) {
+/* =======================================================
+   🔥 FIX IMPORTANTE: NO ROMPER CON TEXTO NO JSON
+======================================================= */
 
-    console.log("URL:", API_BASE + endpoint);
+async function apiFetch(endpoint, options = {}) {
 
-    const response =
-        await fetch(
-            API_BASE + endpoint,
-            {
-                credentials: "include",
+    const response = await fetch(API_BASE + endpoint, {
+        headers: {
+            "Content-Type": "application/json"
+        },
+        ...options
+    });
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
+    const text = await response.text();
 
-                ...options
-            }
-        );
-
+    // ❌ si falló la petición
     if (!response.ok) {
-
-        let error;
-
-        try {
-
-            error =
-                await response.text();
-
-        } catch {
-
-            error =
-                "Error desconocido";
-        }
-
-        throw new Error(error);
+        throw new Error(text);
     }
 
-    const text =
-        await response.text();
+    // ✅ si viene vacío
+    if (!text) {
+        return null;
+    }
 
-    return text
-        ? JSON.parse(text)
-        : null;
+    // ✅ intenta parsear JSON, si no es JSON devuelve texto
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        return text;
+    }
 }
