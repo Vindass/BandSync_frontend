@@ -4,271 +4,185 @@ let ensayos = [];
 let editandoId = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
-
     injectNavbar();
-
     await cargarEnsayos();
 
     const user = getUser();
-
-    if(user?.type !== "ADMIN"){
-
-        document
-            .getElementById("btnNuevoEnsayo")
-            .style.display = "none";
+    if (user?.type !== "ADMIN") {
+        document.getElementById("btnNuevoEnsayo").style.display = "none";
     }
 });
 
-async function cargarEnsayos(){
+// ─── API ─────────────────────────────────────────────────────────────────────
 
-    try{
-
-        ensayos =
-            await apiFetch("/api/ensayos");
-
-        const user = getUser();
-
-        if(user?.type !== "ADMIN"){
-
-            ensayos = ensayos.filter(
-                e => e.integranteId === user.id
-            );
-        }
-
+async function cargarEnsayos() {
+    try {
+        ensayos = await apiFetch("/api/ensayos") || [];
         renderTabla();
-
-    }catch(error){
-
-        console.error(error);
-
+    } catch (e) {
+        console.error(e);
         document.getElementById("ensayosBody").innerHTML =
-        `<tr><td colspan="6">Error cargando ensayos</td></tr>`;
+            `<tr><td colspan="6">Error cargando ensayos</td></tr>`;
     }
 }
 
-function renderTabla(){
+// ─── TABLA ───────────────────────────────────────────────────────────────────
 
-    const user = getUser();
+function renderTabla() {
     const body = document.getElementById("ensayosBody");
+    const user = getUser();
 
-    body.innerHTML = "";
+    let lista = [...ensayos];
 
-    if(ensayos.length === 0){
+    if (user?.type !== "ADMIN") {
+        lista = lista.filter(e => e.integranteId === user.id);
+    }
 
-        body.innerHTML =
-        `<tr><td colspan="6">No hay ensayos</td></tr>`;
+    const texto = document.getElementById("buscarTexto")?.value?.toLowerCase();
+    const fecha  = document.getElementById("buscarFecha")?.value;
+
+    if (texto) {
+        lista = lista.filter(e =>
+            String(e.id).includes(texto) ||
+            e.section?.toLowerCase().includes(texto) ||
+            e.integrante?.toLowerCase().includes(texto)
+        );
+    }
+
+    if (fecha) {
+        lista = lista.filter(e => e.date?.startsWith(fecha));
+    }
+
+    if (lista.length === 0) {
+        body.innerHTML = `<tr><td colspan="6">No hay ensayos</td></tr>`;
         return;
     }
 
-    ensayos.forEach(e => {
-
-        body.innerHTML += `
+    body.innerHTML = lista.map(e => {
+        const asistencia = e.assistance || "PENDIENTE";
+        return `
         <tr>
-
             <td>${e.id}</td>
             <td>${e.date}</td>
             <td>${e.section}</td>
-            <td>${e.integrante}</td>
-
+            <td>${e.integrante || "Sin nombre"}</td>
             <td>
-
-                ${
-                    user?.type === "ADMIN"
-                    ?
-                    `
-                    <select class="form-select-sm"
-                        onchange="cambiarAsistencia(${e.id}, this.value)">
-
-                        <option value="PENDIENTE" ${e.assistance === "PENDIENTE" ? "selected" : ""}>
-                            PENDIENTE
-                        </option>
-
-                        <option value="PRESENTE" ${e.assistance === "PRESENTE" ? "selected" : ""}>
-                            PRESENTE
-                        </option>
-
-                        <option value="AUSENTE" ${e.assistance === "AUSENTE" ? "selected" : ""}>
-                            AUSENTE
-                        </option>
-
+                ${user?.type === "ADMIN" ? `
+                    <select onchange="cambiarAsistencia(${e.id}, this.value)">
+                        <option value="PENDIENTE" ${asistencia === "PENDIENTE" ? "selected" : ""}>PENDIENTE</option>
+                        <option value="PRESENTE"  ${asistencia === "PRESENTE"  ? "selected" : ""}>PRESENTE</option>
+                        <option value="AUSENTE"   ${asistencia === "AUSENTE"   ? "selected" : ""}>AUSENTE</option>
                     </select>
-                    `
-                    :
-                    e.assistance
-                }
-
+                ` : asistencia}
             </td>
-
             <td>
-
-                ${
-                    user?.type === "ADMIN"
-                    ?
-                    `
-                    <button class="btn-secondary btn-sm"
-                        onclick="editarEnsayo(${e.id})">
-                        Editar
-                    </button>
-
-                    <button class="btn-danger btn-sm"
-                        onclick="eliminarEnsayo(${e.id})">
-                        Eliminar
-                    </button>
-                    `
-                    :
-                    "-"
-                }
-
+                ${user?.type === "ADMIN" ? `
+                    <button class="btn-primary" onclick="editarEnsayo(${e.id})">Editar</button>
+                    <button class="btn-danger"  onclick="eliminarEnsayo(${e.id})">Eliminar</button>
+                ` : "-"}
             </td>
-
-        </tr>
-        `;
-    });
+        </tr>`;
+    }).join("");
 }
 
-async function cambiarAsistencia(id, asistencia){
-
-    try{
-
-        await apiFetch(
-            `/api/ensayos/${id}/assistance/${asistencia}`,
-            {
-                method: "PUT"
-            }
-        );
-
-        await cargarEnsayos();
-
-    }catch(error){
-        alert(error.message);
-    }
+function buscarEnsayos() {
+    renderTabla();
 }
 
-function abrirModal(){
+// ─── MODAL ───────────────────────────────────────────────────────────────────
 
+function abrirModal() {
     editandoId = null;
-
-    document.getElementById("ensayoModalTitle").textContent =
-        "Nuevo Ensayo";
-
-    document.getElementById("ensayoForm").reset();
-
+    document.getElementById("inpFecha").value   = "";
+    document.getElementById("inpSection").value = "GENERAL";
+    document.getElementById("ensayoModalTitle").textContent = "Nuevo Ensayo";
     document.getElementById("ensayoModal").classList.remove("hidden");
 }
 
-function cerrarModal(){
-
+function cerrarModal() {
+    editandoId = null;
     document.getElementById("ensayoModal").classList.add("hidden");
 }
 
-async function guardarEnsayo(){
+function editarEnsayo(id) {
+    const ensayo = ensayos.find(e => e.id === id);
+    if (!ensayo) return;
 
-    try{
+    editandoId = id;
+    document.getElementById("ensayoModalTitle").textContent = "Editar Ensayo";
+    document.getElementById("inpFecha").value   = ensayo.date?.substring(0, 16) || "";
+    document.getElementById("inpSection").value = ensayo.section || "GENERAL";
+    document.getElementById("ensayoModal").classList.remove("hidden");
+}
 
-        const body = {
+// ─── CRUD ────────────────────────────────────────────────────────────────────
 
-            date: document.getElementById("inpFecha").value,
-            section: document.getElementById("inpSection").value
-        };
+async function guardarEnsayo() {
+    const fecha   = document.getElementById("inpFecha").value;
+    const section = document.getElementById("inpSection").value;
 
-        if(editandoId){
+    if (!fecha || !section) {
+        alert("Por favor completá todos los campos.");
+        return;
+    }
 
+    const payload = { date: fecha, section };
+
+    try {
+        if (editandoId) {
             await apiFetch(`/api/ensayos/${editandoId}`, {
                 method: "PUT",
-                body: JSON.stringify(body)
+                body: JSON.stringify(payload)
             });
-
-        }else{
-
+        } else {
             await apiFetch("/api/ensayos", {
                 method: "POST",
-                body: JSON.stringify(body)
+                body: JSON.stringify(payload)
             });
         }
 
         cerrarModal();
         await cargarEnsayos();
-
-    }catch(error){
-        alert(error.message);
+    } catch (e) {
+        console.error(e);
+        alert("Error al guardar el ensayo.");
     }
 }
 
-async function editarEnsayo(id){
-
-    try{
-
-        const ensayo =
-            await apiFetch(`/api/ensayos/${id}`);
-
-        editandoId = id;
-
-        document.getElementById("ensayoModalTitle").textContent =
-            "Editar Ensayo";
-
-        document.getElementById("inpFecha").value =
-            ensayo.date.substring(0,16);
-
-        document.getElementById("inpSection").value =
-            ensayo.section;
-
-        document.getElementById("ensayoModal").classList.remove("hidden");
-
-    }catch(error){
-        alert(error.message);
-    }
-}
-
-async function eliminarEnsayo(id){
-
-    if(!confirm("¿Eliminar ensayo?")) return;
-
-    try{
-
-        await apiFetch(`/api/ensayos/${id}`, {
-            method: "DELETE"
-        });
-
+async function eliminarEnsayo(id) {
+    if (!confirm("¿Eliminar ensayo?")) return;
+    try {
+        await apiFetch(`/api/ensayos/${id}`, { method: "DELETE" });
         await cargarEnsayos();
-
-    }catch(error){
-        alert(error.message);
+    } catch (e) {
+        console.error(e);
+        alert("Error al eliminar el ensayo.");
     }
 }
 
-async function buscarEnsayos(){
+async function cambiarAsistencia(id, value) {
+    // Guardamos el valor anterior por si falla
+    const ensayoAnterior = ensayos.find(e => e.id === id);
+    const valorAnterior  = ensayoAnterior?.assistance || "PENDIENTE";
 
-    const section =
-        document.getElementById("buscarSeccion")?.value;
-
-    const assistance =
-        document.getElementById("buscarAsistencia")?.value;
-
-    try{
-
-        let url = "/api/ensayos";
-
-        if(section){
-            url = `/api/ensayos/section/${section}`;
-        }
-
-        if(assistance){
-            url = `/api/ensayos/assistance/${assistance}`;
-        }
-
-        ensayos = await apiFetch(url);
+    try {
+        await apiFetch(`/api/ensayos/${id}/assistance/${value}`, { method: "PUT" });
+        await cargarEnsayos(); // refresca con el nuevo valor
+    } catch (e) {
+        console.error(e);
+        alert("Error al cambiar la asistencia. No se aplicó el cambio.");
+        // Revierte el select visualmente sin recargar
         renderTabla();
-
-    }catch(error){
-        alert(error.message);
     }
 }
 
-window.cargarEnsayos = cargarEnsayos;
-window.guardarEnsayo = guardarEnsayo;
-window.editarEnsayo = editarEnsayo;
-window.eliminarEnsayo = eliminarEnsayo;
-window.abrirModal = abrirModal;
-window.cerrarModal = cerrarModal;
+// ─── EXPORTS ─────────────────────────────────────────────────────────────────
+
+window.cargarEnsayos     = cargarEnsayos;
+window.buscarEnsayos     = buscarEnsayos;
+window.abrirModal        = abrirModal;
+window.cerrarModal       = cerrarModal;
+window.guardarEnsayo     = guardarEnsayo;
+window.editarEnsayo      = editarEnsayo;
+window.eliminarEnsayo    = eliminarEnsayo;
 window.cambiarAsistencia = cambiarAsistencia;
-window.buscarEnsayos = buscarEnsayos;

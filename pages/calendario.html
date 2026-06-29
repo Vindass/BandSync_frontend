@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio - BandSync</title>
+    <title>Calendario - BandSync</title>
+
     <link rel="stylesheet" href="../css/styles.css">
 </head>
+
 <body>
 
 <script src="../js/api.js"></script>
@@ -18,20 +21,15 @@
 
         <div class="calendar-top">
 
-            <button id="btnPrev" class="btn-secondary">
-                ◀
-            </button>
+            <button id="btnPrev" class="btn-secondary">◀</button>
 
             <h2 id="calendarTitle"></h2>
 
-            <button id="btnNext" class="btn-secondary">
-                ▶
-            </button>
+            <button id="btnNext" class="btn-secondary">▶</button>
 
         </div>
 
         <div class="calendar-weekdays">
-
             <div>Dom</div>
             <div>Lun</div>
             <div>Mar</div>
@@ -39,27 +37,25 @@
             <div>Jue</div>
             <div>Vie</div>
             <div>Sáb</div>
-
         </div>
 
-        <div id="calendarGrid" class="calendar-grid">
-
-        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
 
     </div>
 
 </div>
 
+<!-- MODAL -->
 <div class="modal-overlay hidden" id="dayModal">
 
     <div class="modal">
 
         <div class="modal-header">
+
             <h3 id="modalDate"></h3>
 
-            <button id="btnCerrarModal">
-                X
-            </button>
+            <button id="btnCerrarModal">X</button>
+
         </div>
 
         <div id="modalContent"></div>

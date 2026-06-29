@@ -15,64 +15,43 @@
         <p>Administración de integrantes de la Banda Comunal de Orotina</p>
     </div>
 
+
     <div class="search-bar">
 
         <input
-                type="text"
-                id="buscarNombre"
-                placeholder="Buscar por nombre">
+            type="text"
+            id="buscarTexto"
+            placeholder="Buscar por ID, nombre o correo">
 
         <select id="filtroTipo">
 
-            <option value="">
-                Todos los roles
-            </option>
-
-            <option value="ADMIN">
-                Administrador
-            </option>
-
-            <option value="INTEGRANTE">
-                Integrante
-            </option>
+            <option value="">Todos los roles</option>
+            <option value="ADMIN">Administrador</option>
+            <option value="INTEGRANTE">Integrante</option>
 
         </select>
 
         <select id="filtroSeccionI">
 
-            <option value="">
-                Todas las secciones
-            </option>
-
-            <option value="Administracion">
-                Administración
-            </option>
-
-            <option value="Bronces">
-                Bronces
-            </option>
-
-            <option value="Maderas">
-                Maderas
-            </option>
-
-            <option value="Percusión">
-                Percusión
-            </option>
+            <option value="">Todas las secciones</option>
+            <option value="Administracion">Administración</option>
+            <option value="Bronces">Bronces</option>
+            <option value="Maderas">Maderas</option>
+            <option value="Percusión">Percusión</option>
 
         </select>
 
         <button
-                class="btn-secondary btn-sm"
-                onclick="cargarIntegrantes()">
+            class="btn-secondary btn-sm"
+            onclick="cargarIntegrantes()">
 
             🔍 Buscar
 
         </button>
 
         <button
-                class="btn-gold"
-                id="btnNuevoIntegrante">
+            class="btn-gold"
+            id="btnNuevoIntegrante">
 
             + Nuevo integrante
 
@@ -91,7 +70,6 @@
                 <thead>
 
                 <tr>
-
                     <th>ID</th>
                     <th>Nombre</th>
                     <th>Correo</th>
@@ -100,7 +78,6 @@
                     <th>Sección</th>
                     <th>Instrumento</th>
                     <th>Acciones</th>
-
                 </tr>
 
                 </thead>
@@ -108,15 +85,11 @@
                 <tbody id="integrantesBody">
 
                 <tr>
-
                     <td colspan="8">
-
                         <div class="spinner">
                             Cargando integrantes...
                         </div>
-
                     </td>
-
                 </tr>
 
                 </tbody>
@@ -129,195 +102,89 @@
 
 </div>
 
-<div
-        class="modal-overlay hidden"
-        id="intModal">
+
+<div class="modal-overlay hidden" id="intModal">
 
     <div class="modal">
 
         <div class="modal-header">
 
-            <h3 id="intModalTitle">
-                Nuevo Integrante
-            </h3>
+            <h3 id="intModalTitle">Nuevo Integrante</h3>
 
-            <button
-                    class="modal-close"
-                    onclick="cerrarModal()">
-
-                ×
-
-            </button>
+            <button class="modal-close" onclick="cerrarModal()">×</button>
 
         </div>
 
         <form id="intForm">
 
             <div class="form-group">
-
-                <label>
-                    Nombre completo
-                </label>
-
-                <input
-                        type="text"
-                        id="inpNombre"
-                        required>
-
+                <label>Nombre completo</label>
+                <input type="text" id="inpNombre" required>
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Correo electrónico
-                </label>
-
-                <input
-                        type="email"
-                        id="inpEmail"
-                        required>
-
+                <label>Correo electrónico</label>
+                <input type="email" id="inpEmail" required>
             </div>
 
-            <div
-                    id="pwdGroup"
-                    class="form-group">
-
-                <label>
-                    Contraseña
-                </label>
-
-                <input
-                        type="password"
-                        id="inpPass">
-
+            <div id="pwdGroup" class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="inpPass">
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Edad
-                </label>
-
-                <input
-                        type="number"
-                        id="inpEdad"
-                        min="15"
-                        max="65"
-                        required>
-
+                <label>Edad</label>
+                <input type="number" id="inpEdad" min="15" max="65" required>
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Rol
-                </label>
-
-                <select
-                        id="inpRol"
-                        required>
-
-                    <option value="">
-                        Seleccione
-                    </option>
-
-                    <option value="Administrador">
-                        Administrador
-                    </option>
-
-                    <option value="Integrante">
-                        Integrante
-                    </option>
-
+                <label>Rol</label>
+                <select id="inpRol" required>
+                    <option value="">Seleccione</option>
+                    <option value="Administrador">Administrador</option>
+                    <option value="Integrante">Integrante</option>
                 </select>
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Sección
-                </label>
-
-                <select
-                        id="inpSeccionI"
-                        required>
-
-                    <option value="">
-                        Seleccione
-                    </option>
-
-                    <option value="Administracion">
-                        Administración
-                    </option>
-
-                    <option value="Bronces">
-                        Bronces
-                    </option>
-
-                    <option value="Maderas">
-                        Maderas
-                    </option>
-
-                    <option value="Percusión">
-                        Percusión
-                    </option>
-
+                <label>Sección</label>
+                <select id="inpSeccionI" required>
+                    <option value="">Seleccione</option>
+                    <option value="Administracion">Administración</option>
+                    <option value="Bronces">Bronces</option>
+                    <option value="Maderas">Maderas</option>
+                    <option value="Percusión">Percusión</option>
                 </select>
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Instrumento
-                </label>
-
+                <label>Instrumento</label>
                 <select id="inpInstrumento">
-
-                    <option value="">
-                        Sin instrumento
-                    </option>
-
+                    <option value="">Sin instrumento</option>
                 </select>
-
-            </div>
-
-            <div
-                    id="intFormError"
-                    class="error-msg hidden">
-
             </div>
 
         </form>
 
         <div class="modal-footer">
 
-            <button
-                    class="btn-secondary"
-                    onclick="cerrarModal()">
-
+            <button class="btn-secondary" onclick="cerrarModal()">
                 Cancelar
-
             </button>
 
-            <button
-                    class="btn-primary"
-                    id="btnGuardarInt"
-                    onclick="guardarIntegrante()">
-
+            <button class="btn-primary" onclick="guardarIntegrante()">
                 Guardar
-
             </button>
 
         </div>
 
     </div>
-    
+
 </div>
+
 <script src="../js/api.js"></script>
 <script src="../js/navbar.js"></script>
 <script src="../js/integrantes.js"></script>
+
 </body>
 </html>

@@ -2,53 +2,43 @@
 <html lang="es">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ensayos - BandSync</title>
-
-    <link
-        rel="stylesheet"
-        href="../css/styles.css"
-    >
-
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 
 <body>
 
 <script src="../js/api.js"></script>
-
 <script src="../js/navbar.js"></script>
-
 <script src="../js/ensayos.js"></script>
-
-<div id="navbarContainer"></div>
 
 <div class="page-wrapper">
 
     <div class="page-header">
-
         <h2>Ensayos</h2>
-
-        <p>
-            Gestión de ensayos de la banda
-        </p>
-
+        <p>Gestión de ensayos</p>
     </div>
 
+    <!-- 🔎 BÚSQUEDA -->
     <div class="search-bar">
 
-        <button
-            id="btnNuevoEnsayo"
-            class="btn-gold"
-            onclick="abrirModal()"
-        >
-            + Crear ensayo
+        <input
+            type="text"
+            id="buscarTexto"
+            placeholder="Buscar por ID, sección o integrante">
+
+        <input
+            type="date"
+            id="buscarFecha">
+
+        <button class="btn-secondary" onclick="buscarEnsayos()">
+            🔍 Buscar
+        </button>
+
+        <button class="btn-gold" id="btnNuevoEnsayo" onclick="abrirModal()">
+            + Nuevo ensayo
         </button>
 
     </div>
@@ -60,37 +50,20 @@
             <table>
 
                 <thead>
-
                 <tr>
-
                     <th>ID</th>
-
                     <th>FECHA</th>
-
                     <th>SECCIÓN</th>
-
                     <th>INTEGRANTE</th>
-
                     <th>ASISTENCIA</th>
-
                     <th>ACCIONES</th>
-
                 </tr>
-
                 </thead>
 
                 <tbody id="ensayosBody">
 
                 <tr>
-
-                    <td colspan="6">
-
-                        <div class="spinner">
-                            Cargando...
-                        </div>
-
-                    </td>
-
+                    <td colspan="6">Cargando...</td>
                 </tr>
 
                 </tbody>
@@ -103,88 +76,42 @@
 
 </div>
 
-<div
-    class="modal-overlay hidden"
-    id="ensayoModal"
->
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="ensayoModal">
 
     <div class="modal">
 
         <div class="modal-header">
-
-            <h3 id="ensayoModalTitle">
-
-                Nuevo Ensayo
-
-            </h3>
-
-            <button
-                class="modal-close"
-                onclick="cerrarModal()"
-            >
-                ×
-            </button>
-
+            <h3 id="ensayoModalTitle">Nuevo Ensayo</h3>
+            <button onclick="cerrarModal()">×</button>
         </div>
 
         <form id="ensayoForm">
 
             <div class="form-group">
-
                 <label>Fecha y hora</label>
-
-                <input
-                    type="datetime-local"
-                    id="inpFecha"
-                    required
-                >
-
+                <input type="datetime-local" id="inpFecha" required>
             </div>
 
             <div class="form-group">
-
                 <label>Sección</label>
-
-                <select
-                    id="inpSection"
-                    required
-                >
-
-                    <option value="GENERAL">
-                        GENERAL
-                    </option>
-
-                    <option value="Bronces">
-                        Bronces
-                    </option>
-
-                    <option value="Maderas">
-                        Maderas
-                    </option>
-
-                    <option value="Percusión">
-                        Percusión
-                    </option>
-
+                <select id="inpSection" required>
+                    <option value="GENERAL">GENERAL</option>
+                    <option value="Bronces">Bronces</option>
+                    <option value="Maderas">Maderas</option>
+                    <option value="Percusión">Percusión</option>
                 </select>
-
             </div>
 
         </form>
 
         <div class="modal-footer">
 
-            <button
-                class="btn-secondary"
-                onclick="cerrarModal()"
-            >
+            <button class="btn-secondary" onclick="cerrarModal()">
                 Cancelar
             </button>
 
-            <button
-                class="btn-primary"
-                onclick="guardarEnsayo()"
-            >
+            <button class="btn-primary" onclick="guardarEnsayo()">
                 Guardar
             </button>
 
@@ -195,5 +122,4 @@
 </div>
 
 </body>
-
 </html>

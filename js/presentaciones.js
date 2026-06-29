@@ -1,319 +1,172 @@
 requireAuth();
 
-document.addEventListener("DOMContentLoaded", async () => {
-
-    injectNavbar();
-
-    await cargarPresentaciones();
-
-    const user = getUser();
-    const isAdmin = user?.type === "ADMIN";
-
-    const btn = document.getElementById("btnNuevaPresentacion");
-
-    if (btn && !isAdmin) {
-        btn.style.display = "none";
-    }
-
-    btn?.addEventListener("click", abrirModal);
-});
-
-/* =========================
-   VARIABLES
-========================= */
-
 let presentaciones = [];
 let editandoId = null;
 
-/* =========================
-   PERMISOS
-========================= */
+document.addEventListener("DOMContentLoaded", async () => {
+    injectNavbar();
+    await cargarPresentaciones();
 
-function esAdmin() {
     const user = getUser();
-    return user?.type === "ADMIN";
-}
-
-function sinPermiso() {
-    alert("❌ No tienes permisos para realizar esta acción");
-}
-
-/* =========================
-   CARGAR
-========================= */
+    if (user?.type !== "ADMIN") {
+        document.getElementById("btnNuevaPresentacion").style.display = "none";
+    }
+});
 
 async function cargarPresentaciones() {
-
     try {
-
-        presentaciones =
-            await apiFetch("/api/presentaciones");
-
+        presentaciones = await apiFetch("/api/presentaciones") || [];
         renderTabla();
-
-    } catch (error) {
-
-        console.error(error);
-
-        document.getElementById("presentacionesBody").innerHTML =
-            `<tr><td colspan="6">Error cargando datos</td></tr>`;
+    } catch (e) {
+        console.error(e);
     }
 }
 
-/* =========================
-   RENDER TABLA
-========================= */
-
-function renderTabla() {
-
+function renderTabla(lista = null) {
     const body = document.getElementById("presentacionesBody");
-
-    const filtro =
-        document.getElementById("buscarUbicacion")?.value?.toLowerCase() || "";
-
     const user = getUser();
-    const isAdmin = user?.type === "ADMIN";
 
-    let lista = presentaciones;
+    let items = lista ?? [...presentaciones];
 
-    /* =========================
-       🔥 FILTRO POR USUARIO
-    ========================= */
-
-    if (!isAdmin) {
-        lista = lista.filter(p =>
-            p.integranteId === user.id
-        );
+    if (user?.type !== "ADMIN") {
+        items = items.filter(p => p.integranteId === user.id);
     }
 
-    /* =========================
-       FILTRO UBICACION
-    ========================= */
-
-    if (filtro) {
-        lista = lista.filter(p =>
-            p.location.toLowerCase().includes(filtro)
-        );
+    if (items.length === 0) {
+        body.innerHTML = `<tr><td colspan="6">No hay presentaciones</td></tr>`;
+        return;
     }
 
-    body.innerHTML = "";
-
-    lista.forEach(p => {
-
-        body.innerHTML += `
+    body.innerHTML = items.map(p => `
         <tr>
-
             <td>${p.id}</td>
             <td>${p.date}</td>
             <td>${p.location}</td>
-            <td>${p.integrante}</td>
-
-            <!-- =========================
-                 ASISTENCIA
-            ========================= -->
-
+            <td>${p.integrante || "Sin nombre"}</td>
             <td>
-
-                ${
-                    isAdmin
-                    ? `
-                        <select onchange="cambiarAsistencia(${p.id}, this.value)">
-
-                            <option value="">${p.asisstance}</option>
-
-                            <option value="PENDIENTE">PENDIENTE</option>
-                            <option value="ASISTIO">ASISTIÓ</option>
-                            <option value="TARDE">TARDE</option>
-                            <option value="AUSENTE">AUSENTE</option>
-
-                        </select>
-                    `
-                    : `<span>${p.asisstance}</span>`
-                }
-
+                ${user?.type === "ADMIN" ? `
+                    <select onchange="cambiarAsistencia(${p.id}, this.value)">
+                        <option value="PENDIENTE" ${p.assistance === "PENDIENTE" ? "selected" : ""}>PENDIENTE</option>
+                        <option value="PRESENTE"  ${p.assistance === "PRESENTE"  ? "selected" : ""}>PRESENTE</option>
+                        <option value="AUSENTE"   ${p.assistance === "AUSENTE"   ? "selected" : ""}>AUSENTE</option>
+                    </select>
+                ` : (p.assistance || "PENDIENTE")}
             </td>
-
-            <!-- =========================
-                 ACCIONES
-            ========================= -->
-
             <td>
-
-                ${
-                    isAdmin
-                    ? `
-                        <button class="btn-primary"
-                            onclick="editarPresentacion(${p.id})">
-                            Editar
-                        </button>
-
-                        <button class="btn-danger"
-                            onclick="eliminarPresentacion(${p.id})">
-                            Eliminar
-                        </button>
-                    `
-                    : `<span style="color:#999">Solo lectura</span>`
-                }
-
+                ${user?.type === "ADMIN" ? `
+                    <button class="btn-primary" onclick="editarPresentacion(${p.id})">Editar</button>
+                    <button class="btn-danger"  onclick="eliminarPresentacion(${p.id})">Eliminar</button>
+                ` : "-"}
             </td>
-
         </tr>
-        `;
-    });
+    `).join("");
 }
 
-/* =========================
-   MODAL
-========================= */
+function buscarPresentaciones() {
+    const texto = document.getElementById("buscarTexto").value.toLowerCase();
+    const fecha  = document.getElementById("buscarFecha").value;
 
-function abrirModal() {
+    let lista = [...presentaciones];
 
-    if (!esAdmin()) return sinPermiso();
+    if (texto) {
+        lista = lista.filter(p =>
+            String(p.id).includes(texto) ||
+            p.location?.toLowerCase().includes(texto) ||
+            p.integrante?.toLowerCase().includes(texto)
+        );
+    }
 
+    if (fecha) {
+        lista = lista.filter(p => p.date?.startsWith(fecha));
+    }
+
+    renderTabla(lista);
+}
+
+function abrirModal(presentacion = null) {
     editandoId = null;
+    document.getElementById("inpFecha").value     = "";
+    document.getElementById("inpUbicacion").value = "";
 
-    document.getElementById("presForm").reset();
-
-    document.getElementById("presModalTitle").textContent =
-        "Nueva Presentación";
+    if (presentacion) {
+        editandoId = presentacion.id;
+        document.getElementById("inpFecha").value     = presentacion.date?.substring(0, 16) || "";
+        document.getElementById("inpUbicacion").value = presentacion.location || "";
+    }
 
     document.getElementById("presModal").classList.remove("hidden");
 }
 
 function cerrarModal() {
-
+    editandoId = null;
     document.getElementById("presModal").classList.add("hidden");
 }
 
-/* =========================
-   GUARDAR
-========================= */
-
 async function guardarPresentacion() {
+    const fecha     = document.getElementById("inpFecha").value;
+    const ubicacion = document.getElementById("inpUbicacion").value;
 
-    if (!esAdmin()) return sinPermiso();
+    if (!fecha || !ubicacion) {
+        alert("Por favor completá todos los campos.");
+        return;
+    }
+
+    const payload = { date: fecha, location: ubicacion };
 
     try {
-
-        const body = {
-            date: document.getElementById("inpFecha").value,
-            location: document.getElementById("inpUbicacion").value
-        };
-
         if (editandoId) {
-
-            await apiFetch(
-                `/api/presentaciones/${editandoId}`,
-                {
-                    method: "PUT",
-                    body: JSON.stringify(body)
-                }
-            );
-
+            await apiFetch(`/api/presentaciones/${editandoId}`, {
+                method: "PUT",
+                body: JSON.stringify(payload)
+            });
         } else {
-
-            await apiFetch(
-                "/api/presentaciones",
-                {
-                    method: "POST",
-                    body: JSON.stringify(body)
-                }
-            );
+            await apiFetch("/api/presentaciones", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
         }
 
         cerrarModal();
         await cargarPresentaciones();
-
-    } catch (error) {
-
-        alert(error.message);
+    } catch (e) {
+        console.error(e);
+        alert("Error al guardar la presentación.");
     }
 }
 
-/* =========================
-   EDITAR
-========================= */
-
-async function editarPresentacion(id) {
-
-    if (!esAdmin()) return sinPermiso();
-
+function editarPresentacion(id) {
     const p = presentaciones.find(x => x.id === id);
-
     if (!p) return;
-
-    editandoId = id;
-
-    document.getElementById("inpFecha").value = p.date;
-    document.getElementById("inpUbicacion").value = p.location;
-
-    document.getElementById("presModalTitle").textContent =
-        "Editar Presentación";
-
-    document.getElementById("presModal").classList.remove("hidden");
+    abrirModal(p);
 }
-
-/* =========================
-   ELIMINAR
-========================= */
 
 async function eliminarPresentacion(id) {
-
-    if (!esAdmin()) return sinPermiso();
-
-    if (!confirm("¿Eliminar presentación?")) return;
-
+    if (!confirm("¿Eliminar?")) return;
     try {
-
-        await apiFetch(
-            `/api/presentaciones/${id}`,
-            { method: "DELETE" }
-        );
-
+        await apiFetch(`/api/presentaciones/${id}`, { method: "DELETE" });
         await cargarPresentaciones();
-
-    } catch (error) {
-
-        alert(error.message);
+    } catch (e) {
+        console.error(e);
+        alert("Error al eliminar la presentación.");
     }
 }
 
-/* =========================
-   ASISTENCIA (SOLO ADMIN)
-========================= */
-
-async function cambiarAsistencia(id, asistencia) {
-
-    if (!esAdmin()) {
-        sinPermiso();
-        return;
-    }
-
-    if (!asistencia) return;
-
+async function cambiarAsistencia(id, value) {
     try {
-
-        await apiFetch(
-            `/api/presentaciones/${id}/assistance/${asistencia}`,
-            { method: "PUT" }
-        );
-
+        await apiFetch(`/api/presentaciones/${id}/assistance/${value}`, { method: "PUT" });
         await cargarPresentaciones();
-
-    } catch (error) {
-
-        alert(error.message);
+    } catch (e) {
+        console.error(e);
+        alert("Error al cambiar la asistencia.");
+        renderTabla();
     }
 }
 
-/* =========================
-   EXPORT
-========================= */
-
-window.cargarPresentaciones = cargarPresentaciones;
-window.guardarPresentacion = guardarPresentacion;
-window.editarPresentacion = editarPresentacion;
-window.eliminarPresentacion = eliminarPresentacion;
-window.cambiarAsistencia = cambiarAsistencia;
-window.abrirModal = abrirModal;
-window.cerrarModal = cerrarModal;
+window.cargarPresentaciones  = cargarPresentaciones;
+window.buscarPresentaciones  = buscarPresentaciones;
+window.guardarPresentacion   = guardarPresentacion;
+window.editarPresentacion    = editarPresentacion;
+window.eliminarPresentacion  = eliminarPresentacion;
+window.cambiarAsistencia     = cambiarAsistencia;
+window.abrirModal            = abrirModal;
+window.cerrarModal           = cerrarModal;

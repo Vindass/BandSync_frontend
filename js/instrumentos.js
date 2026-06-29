@@ -9,131 +9,85 @@ document.addEventListener("DOMContentLoaded", async () => {
     const user = getUser();
 
     if (user?.type !== "ADMIN") {
-
-        document
-            .getElementById("btnNuevoInstrumento")
-            .style.display = "none";
+        document.getElementById("btnNuevoInstrumento").style.display = "none";
     }
-
-    document
-        .getElementById("btnNuevoInstrumento")
-        ?.addEventListener(
-            "click",
-            abrirModal
-        );
 });
 
 let instrumentos = [];
-
 let editandoId = null;
+
 
 async function cargarInstrumentos() {
 
     try {
 
-        instrumentos =
-            await apiFetch(
-                "/api/instrumentos"
-            );
+        instrumentos = await apiFetch("/api/instrumentos");
 
         renderTabla();
 
     } catch (error) {
 
-        console.error(error);
-
-        document
-            .getElementById("instrumentosBody")
-            .innerHTML =
-            `
-            <tr>
-                <td colspan="4">
-                    Error cargando instrumentos
-                </td>
-            </tr>
-            `;
+        document.getElementById("instrumentosBody").innerHTML =
+            `<tr><td colspan="4">Error cargando instrumentos</td></tr>`;
     }
 }
 
-async function buscarInstrumentoPorId() {
 
-    const id = prompt(
-        "Ingrese el ID del instrumento"
-    );
+async function buscarInstrumento() {
 
-    if (!id) {
-        return;
-    }
+    const input = document
+        .getElementById("buscarInstrumento")
+        .value
+        .trim();
 
-    try {
-
-        const instrumento =
-            await apiFetch(
-                `/api/instrumentos/${id}`
-            );
-
-        instrumentos = [instrumento];
-
-        renderTabla();
-
-    } catch (error) {
-
-        alert(error.message);
-    }
-}
-
-async function buscarInstrumentoPorNombre() {
-
-    const nombre =
-        document
-            .getElementById("buscarInstrumento")
-            .value
-            .trim();
-
-    if (!nombre) {
-
+    if (!input) {
         await cargarInstrumentos();
-
         return;
     }
 
     try {
 
-        instrumentos =
-            await apiFetch(
-                `/api/instrumentos/name/${nombre}`
-            );
+        if (!isNaN(input)) {
 
+            const instrumento =
+                await apiFetch(`/api/instrumentos/${input}`);
+
+            instrumentos = [instrumento];
+            renderTabla();
+            return;
+        }
+
+      
+        const todos = await apiFetch("/api/instrumentos");
+
+        const filtrados = todos.filter(i =>
+            i.name.toLowerCase().includes(input.toLowerCase())
+        );
+
+        if (filtrados.length === 0) {
+            alert("No existe instrumento con ese nombre");
+            return;
+        }
+
+        instrumentos = filtrados;
         renderTabla();
 
     } catch (error) {
-
         alert(error.message);
     }
 }
 
 function renderTabla() {
 
-    console.log("INSTRUMENTOS EN TABLA");
-    console.log(instrumentos);
-
     const body =
-        document.getElementById(
-            "instrumentosBody"
-        );
+        document.getElementById("instrumentosBody");
 
     body.innerHTML = "";
 
     if (instrumentos.length === 0) {
 
         body.innerHTML =
-        `
-        <tr>
-            <td colspan="4">
-                No hay instrumentos registrados
-            </td>
-        </tr>
-        `;
+            `<tr><td colspan="4">No hay instrumentos</td></tr>`;
 
         return;
     }
@@ -142,52 +96,37 @@ function renderTabla() {
 
     instrumentos.forEach(i => {
 
-        body.innerHTML +=
-        `
+        body.innerHTML += `
         <tr>
 
             <td>${i.id}</td>
-
             <td>${i.name}</td>
 
             <td>
-                ${
-                    i.quantity === 0
-                    ? "❌ Agotado"
-                    : i.quantity
-                }
+                ${i.quantity === 0 ? "❌ Agotado" : i.quantity}
             </td>
 
             <td>
 
                 ${
                     user?.type === "ADMIN"
-                    ?
+                    ? `
+                        <button class="btn-primary"
+                            onclick="editarInstrumento(${i.id})">
+                            Editar
+                        </button>
+
+                        <button class="btn-danger"
+                            onclick="eliminarInstrumento(${i.id})">
+                            Retirar
+                        </button>
                     `
-                    <button
-                        class="btn-primary"
-                        onclick="editarInstrumento(${i.id})">
-
-                        Editar
-
-                    </button>
-
-                    <button
-                        class="btn-danger"
-                        onclick="eliminarInstrumento(${i.id})">
-
-                        Retirar
-
-                    </button>
-                    `
-                    :
-                    "-"
+                    : "-"
                 }
 
             </td>
 
-        </tr>
-        `;
+        </tr>`;
     });
 }
 
@@ -195,240 +134,115 @@ function abrirModal() {
 
     editandoId = null;
 
-    document
-        .getElementById(
-            "instModalTitle"
-        )
-        .textContent =
-        "Nuevo Instrumento";
+    document.getElementById("instForm").reset();
+    document.getElementById("instModalTitle").textContent = "Nuevo Instrumento";
 
-    document
-        .getElementById(
-            "instForm"
-        )
-        .reset();
-
-    document
-        .getElementById(
-            "instModal"
-        )
-        .classList.remove(
-            "hidden"
-        );
+    document.getElementById("instModal").classList.remove("hidden");
 }
 
 function cerrarModal() {
-
-    document
-        .getElementById(
-            "instModal"
-        )
-        .classList.add(
-            "hidden"
-        );
+    document.getElementById("instModal").classList.add("hidden");
 }
+
 
 async function guardarInstrumento() {
 
+    const cantidad = Number(
+        document.getElementById("inpCantidad").value
+    );
+
+    if (cantidad < 0) {
+        alert("No puede ser negativo");
+        return;
+    }
+
+    const body = {
+        name: document.getElementById("inpNombreInstrumento").value,
+        quantity: cantidad
+    };
+
     try {
-
-        const cantidad =
-            Number(
-                document
-                    .getElementById(
-                        "inpCantidad"
-                    )
-                    .value
-            );
-
-        if (cantidad < 0) {
-
-            alert(
-                "La cantidad no puede ser negativa"
-            );
-
-            return;
-        }
-
-        const body = {
-
-            name:
-            document
-                .getElementById(
-                    "inpNombreInstrumento"
-                )
-                .value,
-
-            quantity:
-                cantidad
-        };
 
         if (editandoId) {
 
-            await apiFetch(
-
-                `/api/instrumentos/${editandoId}`,
-
-                {
-                    method: "PUT",
-                    body: JSON.stringify(body)
-                }
-            );
+            await apiFetch(`/api/instrumentos/${editandoId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
 
         } else {
 
-            await apiFetch(
-
-                "/api/instrumentos",
-
-                {
-                    method: "POST",
-                    body: JSON.stringify(body)
-                }
-            );
+            await apiFetch("/api/instrumentos", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
         }
 
         cerrarModal();
-
         await cargarInstrumentos();
 
     } catch (error) {
-
         alert(error.message);
     }
 }
+
 
 async function editarInstrumento(id) {
 
     try {
 
-        const instrumento =
-            await apiFetch(
-                `/api/instrumentos/${id}`
-            );
+        const inst =
+            await apiFetch(`/api/instrumentos/${id}`);
 
         editandoId = id;
 
-        document
-            .getElementById(
-                "instModalTitle"
-            )
-            .textContent =
-            "Editar Instrumento";
+        const nombre = document.getElementById("inpNombreInstrumento");
+        const cantidad = document.getElementById("inpCantidad");
+        const modal = document.getElementById("instModal");
+        const title = document.getElementById("instModalTitle");
 
-        document
-            .getElementById(
-                "inpNombreInstrumento"
-            )
-            .value =
-            instrumento.name;
+        if (!nombre || !cantidad || !modal || !title) {
+            console.error("Faltan elementos del modal");
+            return;
+        }
 
-        document
-            .getElementById(
-                "inpCantidad"
-            )
-            .value =
-            instrumento.quantity;
+        nombre.value = inst.name ?? "";
+        cantidad.value = inst.quantity ?? 0;
 
-        document
-            .getElementById(
-                "instModal"
-            )
-            .classList.remove(
-                "hidden"
-            );
+        title.textContent = "Editar Instrumento";
+        modal.classList.remove("hidden");
 
     } catch (error) {
-
         alert(error.message);
     }
 }
 
 async function eliminarInstrumento(id) {
 
-    const instrumento =
-        instrumentos.find(
-            i => i.id === id
-        );
+    const inst = instrumentos.find(i => i.id === id);
 
-    if (!instrumento) {
-        return;
-    }
+    const cant = prompt(`¿Cuántos eliminar de ${inst.name}?`);
 
-    const cantidad = prompt(
-        `Instrumento: ${instrumento.name}
-
-Disponibles: ${instrumento.quantity}
-
-¿Cuántos desea eliminar?`
-    );
-
-    if (cantidad === null) {
-        return;
-    }
-
-    const eliminar =
-        Number(cantidad);
-
-    if (
-        isNaN(eliminar) ||
-        eliminar <= 0
-    ) {
-
-        alert("Cantidad inválida");
-        return;
-    }
-
-    if (
-        eliminar > instrumento.quantity
-    ) {
-
-        alert(
-            `Solo existen ${instrumento.quantity} disponibles`
-        );
-
-        return;
-    }
+    if (!cant) return;
 
     try {
 
-        await apiFetch(
-
-            `/api/instrumentos/${id}/${eliminar}`,
-
-            {
-                method: "DELETE"
-            }
-        );
+        await apiFetch(`/api/instrumentos/${id}/${cant}`, {
+            method: "DELETE"
+        });
 
         await cargarInstrumentos();
 
     } catch (error) {
-
         alert(error.message);
     }
 }
 
-window.cargarInstrumentos =
-    cargarInstrumentos;
 
-window.buscarInstrumentoPorId =
-    buscarInstrumentoPorId;
-
-window.buscarInstrumentoPorNombre =
-    buscarInstrumentoPorNombre;
-
-window.guardarInstrumento =
-    guardarInstrumento;
-
-window.editarInstrumento =
-    editarInstrumento;
-
-window.eliminarInstrumento =
-    eliminarInstrumento;
-
-window.abrirModal =
-    abrirModal;
-
-window.cerrarModal =
-    cerrarModal;
+window.cargarInstrumentos = cargarInstrumentos;
+window.buscarInstrumento = buscarInstrumento;
+window.guardarInstrumento = guardarInstrumento;
+window.editarInstrumento = editarInstrumento;
+window.eliminarInstrumento = eliminarInstrumento;
+window.abrirModal = abrirModal;
+window.cerrarModal = cerrarModal;

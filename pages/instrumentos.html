@@ -5,31 +5,23 @@
 
     <meta charset="UTF-8">
 
-    <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Instrumentos - BandSync</title>
 
-    <link
-            rel="stylesheet"
-            href="../css/styles.css"
-    >
+    <link rel="stylesheet" href="../css/styles.css">
 
 </head>
 
 <body>
 
 <script src="../js/api.js"></script>
-
 <script src="../js/navbar.js"></script>
-
-<script src="../js/instrumentos.js"></script>
 
 <div id="navbarContainer"></div>
 
 <div class="page-wrapper">
+
 
     <div class="page-header">
 
@@ -44,28 +36,30 @@
     <div class="search-bar">
 
         <input
-                type="text"
-                id="buscarInstrumento"
-                placeholder="Buscar por nombre..."
-        >
+            type="text"
+            id="buscarInstrumento"
+            placeholder="Buscar por nombre o ID...">
 
         <button
-                class="btn-secondary"
-                onclick="buscarInstrumentoPorNombre()"
-        >
+            class="btn-secondary"
+            onclick="buscarInstrumento()">
+
             🔍 Buscar
+
         </button>
 
         <button
-                id="btnNuevoInstrumento"
-                class="btn-gold"
-                onclick="abrirModal()"
-        >
+            id="btnNuevoInstrumento"
+            class="btn-gold"
+            onclick="abrirModal()">
+
             + Agregar instrumento
+
         </button>
 
     </div>
 
+   
     <div class="card">
 
         <div class="table-wrapper">
@@ -74,33 +68,30 @@
 
                 <thead>
 
-                <tr>
+                    <tr>
 
-                    <th>#</th>
+                        <th>ID</th>
+                        <th>NOMBRE</th>
+                        <th>CANTIDAD</th>
+                        <th>ACCIONES</th>
 
-                    <th>NOMBRE</th>
-
-                    <th>CANTIDAD</th>
-
-                    <th>ACCIONES</th>
-
-                </tr>
+                    </tr>
 
                 </thead>
 
                 <tbody id="instrumentosBody">
 
-                <tr>
+                    <tr>
 
-                    <td colspan="4">
+                        <td colspan="4">
 
-                        <div class="spinner">
-                            Cargando...
-                        </div>
+                            <div class="spinner">
+                                Cargando...
+                            </div>
 
-                    </td>
+                        </td>
 
-                </tr>
+                    </tr>
 
                 </tbody>
 
@@ -112,25 +103,18 @@
 
 </div>
 
-<div
-        class="modal-overlay hidden"
-        id="instModal"
->
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="instModal">
 
     <div class="modal">
 
         <div class="modal-header">
 
             <h3 id="instModalTitle">
-
                 Nuevo Instrumento
-
             </h3>
 
-            <button
-                    class="modal-close"
-                    onclick="cerrarModal()"
-            >
+            <button class="modal-close" onclick="cerrarModal()">
                 ×
             </button>
 
@@ -140,34 +124,24 @@
 
             <div class="form-group">
 
-                <label>
-
-                    Nombre del instrumento
-
-                </label>
+                <label>Nombre del instrumento</label>
 
                 <input
-                        type="text"
-                        id="inpNombreInstrumento"
-                        required
-                >
+                    type="text"
+                    id="inpNombreInstrumento"
+                    required>
 
             </div>
 
             <div class="form-group">
 
-                <label>
-
-                    Cantidad
-
-                </label>
+                <label>Cantidad</label>
 
                 <input
-                        type="number"
-                        id="inpCantidad"
-                        min="0"
-                        required
-                >
+                    type="number"
+                    id="inpCantidad"
+                    min="0"
+                    required>
 
             </div>
 
@@ -175,17 +149,11 @@
 
         <div class="modal-footer">
 
-            <button
-                    class="btn-secondary"
-                    onclick="cerrarModal()"
-            >
+            <button class="btn-secondary" onclick="cerrarModal()">
                 Cancelar
             </button>
 
-            <button
-                    class="btn-primary"
-                    onclick="guardarInstrumento()"
-            >
+            <button class="btn-primary" onclick="guardarInstrumento()">
                 Guardar
             </button>
 
@@ -194,6 +162,9 @@
     </div>
 
 </div>
+
+
+<script src="../js/instrumentos.js"></script>
 
 </body>
 

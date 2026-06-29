@@ -1,499 +1,247 @@
 requireAuth();
 
-document.addEventListener("DOMContentLoaded", async () => {
-
-    injectNavbar();
-
-    await cargarInstrumentos();
-
-    await cargarIntegrantes();
-
-    const user = getUser();
-
-    if(user?.type !== "ADMIN"){
-
-        document
-            .getElementById("btnNuevoIntegrante")
-            .style.display = "none";
-    }
-
-    document
-        .getElementById("inpRol")
-        .addEventListener(
-            "change",
-            cambiarRol
-        );
-
-    document
-        .getElementById("btnNuevoIntegrante")
-        ?.addEventListener(
-            "click",
-            abrirModal
-        );
-});
-
 let integrantes = [];
 let instrumentos = [];
 let editandoId = null;
 
-async function cargarInstrumentos(){
-
-    try{
-
-        instrumentos =
-            await apiFetch(
-                "/api/instrumentos"
-            );
-
-        const select =
-            document.getElementById(
-                "inpInstrumento"
-            );
-
-        select.innerHTML =
-            '<option value="">Sin instrumento</option>';
-
-        instrumentos.forEach(inst => {
-
-            select.innerHTML += `
-                <option value="${inst.id}">
-                    ${inst.name}
-                    (${inst.quantity})
-                </option>
-            `;
-        });
-
-    }catch(error){
-
-        console.error(error);
-    }
-}
-
-async function cargarIntegrantes(){
-
-    try{
-
-        integrantes =
-            await apiFetch(
-                "/api/integrantes"
-            );
-
-        renderTabla();
-
-    }catch(error){
-
-        console.error(error);
-
-        document
-            .getElementById(
-                "integrantesBody"
-            )
-            .innerHTML =
-            `
-            <tr>
-                <td colspan="8">
-                    Error cargando integrantes
-                </td>
-            </tr>
-            `;
-    }
-}
-
-function renderTabla(){
-
-    const body =
-        document.getElementById(
-            "integrantesBody"
-        );
-
-    const nombre =
-        document
-            .getElementById("buscarNombre")
-            .value
-            .toLowerCase();
-
-    const tipo =
-        document
-            .getElementById("filtroTipo")
-            .value;
-
-    const seccion =
-        document
-            .getElementById("filtroSeccionI")
-            .value;
-
-    let lista = integrantes;
-
-    if(nombre){
-
-        lista =
-            lista.filter(i =>
-                i.name
-                 .toLowerCase()
-                 .includes(nombre)
-            );
-    }
-
-    if(tipo){
-
-        lista =
-            lista.filter(i =>
-                i.type === tipo
-            );
-    }
-
-    if(seccion){
-
-        lista =
-            lista.filter(i =>
-                i.section === seccion
-            );
-    }
-
-    body.innerHTML = "";
+document.addEventListener("DOMContentLoaded", async () => {
+    injectNavbar();
+    await cargarInstrumentos();
+    await cargarIntegrantes();
 
     const user = getUser();
+    if (user?.type !== "ADMIN") {
+        document.getElementById("btnNuevoIntegrante").style.display = "none";
+    }
 
-    lista.forEach(i => {
+    document.getElementById("inpRol")?.addEventListener("change", cambiarRol);
+    document.getElementById("btnNuevoIntegrante")?.addEventListener("click", () => abrirModal());
+});
 
-        body.innerHTML += `
+// ─── API ─────────────────────────────────────────────────────────────────────
 
-        <tr>
-
-            <td>${i.id}</td>
-
-            <td>${i.name}</td>
-
-            <td>${i.email}</td>
-
-            <td>${i.age}</td>
-
-            <td>${i.type}</td>
-
-            <td>${i.section}</td>
-
-            <td>${i.instrument}</td>
-
-            <td>
-
-                ${
-                    user?.type === "ADMIN"
-                    ?
-
-                    `
-                    <button
-                    class="btn-primary"
-                    onclick="editarIntegrante(${i.id})">
-
-                    Editar
-
-                    </button>
-
-                    <button
-                    class="btn-danger"
-                    onclick="eliminarIntegrante(${i.id})">
-
-                    Eliminar
-
-                    </button>
-                    `
-                    :
-                    "-"
-                }
-
-            </td>
-
-        </tr>
-        `;
-    });
-}
-
-function cambiarRol(){
-
-    const rol =
-        document
-            .getElementById("inpRol")
-            .value;
-
-    const seccion =
-        document
-            .getElementById("inpSeccionI");
-
-    const instrumento =
-        document
-            .getElementById("inpInstrumento");
-
-    if(
-        rol === "ADMIN" ||
-        rol === "Administrador"
-    ){
-
-        seccion.value =
-            "Administracion";
-
-        seccion.disabled = true;
-
-        instrumento.value = "";
-
-        instrumento.disabled = true;
-
-    }else{
-
-        seccion.disabled = false;
-
-        instrumento.disabled = false;
+async function cargarInstrumentos() {
+    try {
+        instrumentos = await apiFetch("/api/instrumentos") || [];
+        const select = document.getElementById("inpInstrumento");
+        select.innerHTML = `<option value="">Sin instrumento</option>`;
+        instrumentos.forEach(inst => {
+            select.innerHTML += `<option value="${inst.id}">${inst.name} (${inst.quantity})</option>`;
+        });
+    } catch (error) {
+        console.error(error);
     }
 }
 
-function abrirModal(){
+async function cargarIntegrantes() {
+    try {
+        integrantes = await apiFetch("/api/integrantes") || [];
+        renderTabla();
+    } catch (error) {
+        console.error(error);
+        document.getElementById("integrantesBody").innerHTML =
+            `<tr><td colspan="8">Error cargando datos</td></tr>`;
+    }
+}
 
+// ─── TABLA ───────────────────────────────────────────────────────────────────
+
+function aplicarBusqueda(lista) {
+    const texto   = document.getElementById("buscarTexto").value.trim().toLowerCase();
+    const tipo    = document.getElementById("filtroTipo").value;
+    const seccion = document.getElementById("filtroSeccionI").value;
+
+    let resultado = lista;
+
+    if (texto) {
+        resultado = resultado.filter(i =>
+            i.name.toLowerCase().includes(texto) ||
+            i.email.toLowerCase().includes(texto) ||
+            i.id.toString() === texto
+        );
+    }
+    if (tipo)    resultado = resultado.filter(i => i.type === tipo);
+    if (seccion) resultado = resultado.filter(i => i.section === seccion);
+
+    return resultado;
+}
+
+function renderTabla() {
+    const body = document.getElementById("integrantesBody");
+    const user = getUser();
+    const lista = aplicarBusqueda(integrantes);
+
+    if (lista.length === 0) {
+        body.innerHTML = `<tr><td colspan="8">Sin resultados</td></tr>`;
+        return;
+    }
+
+    body.innerHTML = lista.map(i => `
+        <tr>
+            <td>${i.id}</td>
+            <td>${i.name}</td>
+            <td>${i.email}</td>
+            <td>${i.age}</td>
+            <td>${i.type}</td>
+            <td>${i.section}</td>
+            <td>${i.instrument || "-"}</td>
+            <td>
+                ${user?.type === "ADMIN" ? `
+                    <button class="btn-primary" onclick="editarIntegrante(${i.id})">Editar</button>
+                    <button class="btn-danger"  onclick="eliminarIntegrante(${i.id})">Eliminar</button>
+                ` : "-"}
+            </td>
+        </tr>
+    `).join("");
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+
+function abrirModal(integrante = null) {
     editandoId = null;
 
-    document
-        .getElementById(
-            "intModalTitle"
-        )
-        .textContent =
-        "Nuevo Integrante";
+    // Rehabilitar campos por si quedaron deshabilitados
+    document.getElementById("inpSeccionI").disabled    = false;
+    document.getElementById("inpInstrumento").disabled = false;
 
-    document
-        .getElementById(
-            "intForm"
-        )
-        .reset();
+    // Limpiar todos los campos
+    document.getElementById("inpNombre").value      = "";
+    document.getElementById("inpEmail").value       = "";
+    document.getElementById("inpPass").value        = "";
+    document.getElementById("inpEdad").value        = "";
+    document.getElementById("inpRol").value         = "";
+    document.getElementById("inpSeccionI").value    = "";
+    document.getElementById("inpInstrumento").value = "";
 
-    document
-        .getElementById(
-            "pwdGroup"
-        )
-        .style.display =
-        "block";
+    document.getElementById("intModalTitle").textContent  = "Nuevo Integrante";
+    document.getElementById("pwdGroup").style.display     = "block";  // siempre visible en creación
 
-    document
-        .getElementById(
-            "intModal"
-        )
-        .classList.remove(
-            "hidden"
-        );
+    if (integrante) {
+        editandoId = integrante.id;
+        document.getElementById("intModalTitle").textContent = "Editar Integrante";
+        document.getElementById("pwdGroup").style.display    = "none"; // oculto en edición
+
+        document.getElementById("inpNombre").value      = integrante.name    || "";
+        document.getElementById("inpEmail").value       = integrante.email   || "";
+        document.getElementById("inpEdad").value        = integrante.age     || "";
+        document.getElementById("inpRol").value         = integrante.type === "ADMIN" ? "Administrador" : "Integrante";
+        document.getElementById("inpSeccionI").value    = integrante.section || "";
+        document.getElementById("inpInstrumento").value = integrante.instrumentId || "";
+
+        if (integrante.type === "ADMIN") aplicarReglaAdmin();
+    }
+
+    document.getElementById("intModal").classList.remove("hidden");
 }
 
-function cerrarModal(){
+function cerrarModal() {
+    editandoId = null;
 
-    document
-        .getElementById(
-            "intModal"
-        )
-        .classList.add(
-            "hidden"
-        );
+    // Rehabilitar por si quedaron deshabilitados al cerrar
+    document.getElementById("inpSeccionI").disabled    = false;
+    document.getElementById("inpInstrumento").disabled = false;
+
+    document.getElementById("intModal").classList.add("hidden");
 }
 
-async function guardarIntegrante(){
+function cambiarRol() {
+    const rol = document.getElementById("inpRol").value;
+    if (rol === "Administrador") {
+        aplicarReglaAdmin();
+    } else {
+        document.getElementById("inpSeccionI").disabled    = false;
+        document.getElementById("inpInstrumento").disabled = false;
+    }
+}
 
-    try{
+function aplicarReglaAdmin() {
+    document.getElementById("inpSeccionI").value       = "Administracion";
+    document.getElementById("inpSeccionI").disabled    = true;
 
-        const rol =
-            document
-                .getElementById(
-                    "inpRol"
-                )
-                .value;
+    document.getElementById("inpInstrumento").value    = "";
+    document.getElementById("inpInstrumento").disabled = true;
+}
 
-        const instrumentoId =
-            document
-                .getElementById(
-                    "inpInstrumento"
-                )
-                .value;
+// ─── CRUD ────────────────────────────────────────────────────────────────────
 
-        if(
-            rol === "Integrante"
-            &&
-            !instrumentoId
-        ){
+async function guardarIntegrante() {
 
-            alert(
-                "Debe seleccionar instrumento"
-            );
+    // Rehabilitar antes de leer valores (disabled no se lee)
+    document.getElementById("inpSeccionI").disabled    = false;
+    document.getElementById("inpInstrumento").disabled = false;
 
-            return;
-        }
+    const nombre  = document.getElementById("inpNombre").value.trim();
+    const email   = document.getElementById("inpEmail").value.trim();
+    const edad    = document.getElementById("inpEdad").value;
+    const rol     = document.getElementById("inpRol").value;
+    const seccion = document.getElementById("inpSeccionI").value;
 
-        const body = {
+    if (!nombre || !email || !edad || !rol || !seccion) {
+        alert("Por favor completá todos los campos obligatorios.");
+        return;
+    }
 
-            name:
-            document.getElementById("inpNombre").value,
+    const payload = {
+        name:         nombre,
+        email:        email,
+        age:          Number(edad),
+        type:         rol === "Administrador" ? "ADMIN" : "INTEGRANTE",
+        section:      seccion,
+        instrumentId: document.getElementById("inpInstrumento").value
+                        ? Number(document.getElementById("inpInstrumento").value)
+                        : null
+    };
 
-            email:
-            document.getElementById("inpEmail").value,
+    if (!editandoId) {
+        const pass = document.getElementById("inpPass").value;
+        if (!pass) { alert("La contraseña es obligatoria."); return; }
+        payload.password = pass;
+    }
 
-            password:
-            document.getElementById("inpPass").value,
-
-            age:
-            Number(
-                document.getElementById("inpEdad").value
-            ),
-
-            type:
-            rol === "Administrador"
-            ? "ADMIN"
-            : "INTEGRANTE",
-
-            section:
-            document.getElementById("inpSeccionI").value,
-
-            instrumentId:
-            instrumentoId
-            ? Number(instrumentoId)
-            : null
-        };
-
-        if(editandoId){
-
-            await apiFetch(
-
-                `/api/integrantes/${editandoId}`,
-
-                {
-                    method:"PUT",
-                    body:JSON.stringify(body)
-                }
-            );
-
-        }else{
-
-            await apiFetch(
-
-                "/api/integrantes",
-
-                {
-                    method:"POST",
-                    body:JSON.stringify(body)
-                }
-            );
+    try {
+        if (editandoId) {
+            await apiFetch(`/api/integrantes/${editandoId}`, {
+                method: "PUT",
+                body: JSON.stringify(payload)
+            });
+        } else {
+            await apiFetch("/api/integrantes", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
         }
 
         cerrarModal();
-
         await cargarIntegrantes();
-
-    }catch(error){
-
-        alert(error.message);
+    } catch (e) {
+        console.error(e);
+        alert("Error al guardar el integrante.");
     }
 }
 
-async function editarIntegrante(id){
-
-    const integrante =
-        integrantes.find(
-            i => i.id === id
-        );
-
-    if(!integrante){
-        return;
-    }
-
-    editandoId = id;
-
-    document
-        .getElementById(
-            "intModalTitle"
-        )
-        .textContent =
-        "Editar Integrante";
-
-    document
-        .getElementById("inpNombre")
-        .value =
-        integrante.name;
-
-    document
-        .getElementById("inpEmail")
-        .value =
-        integrante.email;
-
-    document
-        .getElementById("inpEdad")
-        .value =
-        integrante.age;
-
-    document
-        .getElementById("inpRol")
-        .value =
-        integrante.type === "ADMIN"
-        ? "Administrador"
-        : "Integrante";
-
-    document
-        .getElementById("inpSeccionI")
-        .value =
-        integrante.section;
-
-    document
-        .getElementById("inpInstrumento")
-        .value =
-        integrante.instrumentId || "";
-
-    document
-        .getElementById("pwdGroup")
-        .style.display =
-        "none";
-
-    cambiarRol();
-
-    document
-        .getElementById("intModal")
-        .classList.remove(
-            "hidden"
-        );
+function editarIntegrante(id) {
+    const integrante = integrantes.find(i => i.id === id);
+    if (!integrante) return;
+    abrirModal(integrante);
 }
 
-async function eliminarIntegrante(id){
-
-    if(
-        !confirm(
-            "¿Eliminar integrante?"
-        )
-    ){
-        return;
-    }
-
-    try{
-
-        await apiFetch(
-
-            `/api/integrantes/${id}`,
-
-            {
-                method:"DELETE"
-            }
-        );
-
+async function eliminarIntegrante(id) {
+    if (!confirm("¿Eliminar este integrante?")) return;
+    try {
+        await apiFetch(`/api/integrantes/${id}`, { method: "DELETE" });
         await cargarIntegrantes();
-
-    }catch(error){
-
-        alert(error.message);
+    } catch (e) {
+        console.error(e);
+        alert("Error al eliminar el integrante.");
     }
 }
 
-window.cargarIntegrantes =
-    cargarIntegrantes;
+// ─── EXPORTS ─────────────────────────────────────────────────────────────────
 
-window.guardarIntegrante =
-    guardarIntegrante;
-
-window.editarIntegrante =
-    editarIntegrante;
-
-window.eliminarIntegrante =
-    eliminarIntegrante;
-
-window.abrirModal =
-    abrirModal;
-
-window.cerrarModal =
-    cerrarModal;
+window.cargarIntegrantes  = cargarIntegrantes;
+window.guardarIntegrante  = guardarIntegrante;
+window.editarIntegrante   = editarIntegrante;
+window.eliminarIntegrante = eliminarIntegrante;
+window.abrirModal         = abrirModal;
+window.cerrarModal        = cerrarModal;
+window.cambiarRol         = cambiarRol;
