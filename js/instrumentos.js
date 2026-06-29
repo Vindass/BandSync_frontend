@@ -114,6 +114,9 @@ async function buscarInstrumentoPorNombre() {
 
 function renderTabla() {
 
+    console.log("INSTRUMENTOS EN TABLA");
+    console.log(instrumentos);
+
     const body =
         document.getElementById(
             "instrumentosBody"
@@ -137,55 +140,56 @@ function renderTabla() {
 
     const user = getUser();
 
-instrumentos.forEach(i => {
+    instrumentos.forEach(i => {
 
-    body.innerHTML +=
-    `
-    <tr>
+        body.innerHTML +=
+        `
+        <tr>
 
-        <td>${i.id}</td>
+            <td>${i.id}</td>
 
-        <td>${i.name}</td>
+            <td>${i.name}</td>
 
-        <td>
-            ${
-                i.quantity === 0
-                ? "❌ Agotado"
-                : i.quantity
-            }
-        </td>
+            <td>
+                ${
+                    i.quantity === 0
+                    ? "❌ Agotado"
+                    : i.quantity
+                }
+            </td>
 
-        <td>
+            <td>
 
-            ${
-                user?.type === "ADMIN"
-                ?
-                `
-                <button
-                    class="btn-primary"
-                    onclick="editarInstrumento(${i.id})">
+                ${
+                    user?.type === "ADMIN"
+                    ?
+                    `
+                    <button
+                        class="btn-primary"
+                        onclick="editarInstrumento(${i.id})">
 
-                    Editar
+                        Editar
 
-                </button>
+                    </button>
 
-                <button
-                    class="btn-danger"
-                    onclick="eliminarInstrumento(${i.id})">
+                    <button
+                        class="btn-danger"
+                        onclick="eliminarInstrumento(${i.id})">
 
-                    Retirar
+                        Retirar
 
-                </button>
-                `
-                :
-                "-"
-            }
+                    </button>
+                    `
+                    :
+                    "-"
+                }
 
-        </td>
+            </td>
 
-    </tr>
-    `;
-});
+        </tr>
+        `;
+    });
+}
 
 function abrirModal() {
 
@@ -222,7 +226,9 @@ function cerrarModal() {
         .classList.add(
             "hidden"
         );
-        async function guardarInstrumento() {
+}
+
+async function guardarInstrumento() {
 
     try {
 
@@ -235,7 +241,7 @@ function cerrarModal() {
                     .value
             );
 
-        if(cantidad < 0){
+        if (cantidad < 0) {
 
             alert(
                 "La cantidad no puede ser negativa"
@@ -254,7 +260,7 @@ function cerrarModal() {
                 .value,
 
             quantity:
-            cantidad
+                cantidad
         };
 
         if (editandoId) {
@@ -402,6 +408,7 @@ Disponibles: ${instrumento.quantity}
         alert(error.message);
     }
 }
+
 window.cargarInstrumentos =
     cargarInstrumentos;
 
@@ -425,5 +432,3 @@ window.abrirModal =
 
 window.cerrarModal =
     cerrarModal;
-}
-}

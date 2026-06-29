@@ -1,387 +1,200 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Instrumentos – BandSync BCO</title>
-  <link rel="stylesheet" href="../css/styles.css"/>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Instrumentos - BandSync</title>
+
+    <link
+            rel="stylesheet"
+            href="../css/styles.css"
+    >
+
 </head>
+
 <body>
 
 <script src="../js/api.js"></script>
+
 <script src="../js/navbar.js"></script>
-<script>
-  requireAuth();
-  document.addEventListener("DOMContentLoaded", () => injectNavbar("instrumentos"));
-</script>
+
+<script src="../js/instrumentos.js"></script>
+
+<div id="navbarContainer"></div>
 
 <div class="page-wrapper">
-  <div class="page-header">
-    <h2>Instrumentos</h2>
-    <p>Controlá el inventario de instrumentos de la banda</p>
-  </div>
 
-  <div class="search-bar">
-    <input type="text" id="buscarInst" placeholder="Buscar por nombre…"/>
-    <button class="btn-secondary btn-sm" onclick="cargarInst()">🔍 Buscar</button>
-    <button class="btn-gold" onclick="abrirModal()">+ Agregar instrumento</button>
-  </div>
+    <div class="page-header">
 
-  <div id="alertaInst"></div>
+        <h2>Instrumentos</h2>
 
-  <div class="card">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Nombre</th>
-            <th>Cantidad</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="instBody">
-          <tr>
-            <td colspan="4">
-              <div class="spinner">Cargando...</div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <p>
+            Controlá el inventario de instrumentos de la banda
+        </p>
+
     </div>
-  </div>
+
+    <div class="search-bar">
+
+        <input
+                type="text"
+                id="buscarInstrumento"
+                placeholder="Buscar por nombre..."
+        >
+
+        <button
+                class="btn-secondary"
+                onclick="buscarInstrumentoPorNombre()"
+        >
+            🔍 Buscar
+        </button>
+
+        <button
+                id="btnNuevoInstrumento"
+                class="btn-gold"
+                onclick="abrirModal()"
+        >
+            + Agregar instrumento
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                <tr>
+
+                    <th>#</th>
+
+                    <th>NOMBRE</th>
+
+                    <th>CANTIDAD</th>
+
+                    <th>ACCIONES</th>
+
+                </tr>
+
+                </thead>
+
+                <tbody id="instrumentosBody">
+
+                <tr>
+
+                    <td colspan="4">
+
+                        <div class="spinner">
+                            Cargando...
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
 </div>
 
-<!-- Modal -->
-<div class="modal-overlay hidden" id="instModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="instModalTitle">Nuevo Instrumento</h3>
-      <button class="modal-close" onclick="cerrarModal()">×</button>
-    </div>
+<div
+        class="modal-overlay hidden"
+        id="instModal"
+>
 
-    <form id="instForm">
-      <div class="form-group">
-        <label>Nombre del instrumento</label>
-        <input
-          type="text"
-          id="inpInstNombre"
-          required
-          placeholder="Ej: Trompeta"/>
-      </div>
+    <div class="modal">
 
-      <div class="form-group">
-        <label>Cantidad</label>
-        <input
-          type="number"
-          id="inpInstCant"
-          required
-          min="1"
-          placeholder="1"/>
-      </div>
+        <div class="modal-header">
 
-      <div id="instFormError" class="error-msg hidden"></div>
-    </form>
+            <h3 id="instModalTitle">
 
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="cerrarModal()">
-        Cancelar
-      </button>
+                Nuevo Instrumento
 
-      <button
-        class="btn-primary"
-        onclick="guardarInst()"
-        id="btnGuardarInst">
-        Guardar
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-
-  let instrumentos = [];
-  let editingId = null;
-
-  async function cargarInst() {
-
-    const nombre =
-      document.getElementById("buscarInst")
-      .value
-      .trim();
-
-    document.getElementById("instBody").innerHTML =
-      `<tr>
-          <td colspan="4">
-            <div class="spinner">Cargando...</div>
-          </td>
-       </tr>`;
-
-    try {
-
-      let url = "/api/instrumentos";
-
-      if (nombre) {
-        url =
-          `/api/instrumentos/name/${encodeURIComponent(nombre)}`;
-      }
-
-      const data =
-        await apiFetch(url);
-
-      instrumentos =
-        Array.isArray(data)
-          ? data
-          : [data];
-
-      renderTabla();
-
-    } catch(e) {
-
-      document.getElementById("instBody").innerHTML =
-        `<tr>
-            <td colspan="4"
-                style="padding:1rem;color:var(--rojo)">
-                ${e.message}
-            </td>
-         </tr>`;
-    }
-  }
-
-  function renderTabla() {
-
-    const tbody =
-      document.getElementById("instBody");
-
-    if (!instrumentos.length) {
-
-      tbody.innerHTML =
-        `<tr>
-            <td colspan="4"
-                style="padding:1.5rem;text-align:center;color:var(--texto-suave)">
-                No hay instrumentos registrados
-            </td>
-         </tr>`;
-
-      return;
-    }
-
-    tbody.innerHTML =
-      instrumentos.map((inst, i) => `
-
-        <tr>
-
-          <td>${i + 1}</td>
-
-          <td>
-            <strong>
-              ${inst.name || inst.nombre}
-            </strong>
-          </td>
-
-          <td>
-            <span
-              class="badge"
-              style="background:var(--gris-bg);color:var(--marino)">
-              ${inst.quantity || inst.cantidad || 1}
-            </span>
-          </td>
-
-          <td style="display:flex;gap:0.4rem">
+            </h3>
 
             <button
-              class="btn-secondary btn-sm"
-              onclick="editarInst(${inst.id})">
-              ✏ Editar
+                    class="modal-close"
+                    onclick="cerrarModal()"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <form id="instForm">
+
+            <div class="form-group">
+
+                <label>
+
+                    Nombre del instrumento
+
+                </label>
+
+                <input
+                        type="text"
+                        id="inpNombreInstrumento"
+                        required
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label>
+
+                    Cantidad
+
+                </label>
+
+                <input
+                        type="number"
+                        id="inpCantidad"
+                        min="0"
+                        required
+                >
+
+            </div>
+
+        </form>
+
+        <div class="modal-footer">
+
+            <button
+                    class="btn-secondary"
+                    onclick="cerrarModal()"
+            >
+                Cancelar
             </button>
 
             <button
-              class="btn-danger btn-sm"
-              onclick="eliminarInst(${inst.id}, ${inst.quantity || 1})">
-              🗑
+                    class="btn-primary"
+                    onclick="guardarInstrumento()"
+            >
+                Guardar
             </button>
 
-          </td>
+        </div>
 
-        </tr>
+    </div>
 
-      `).join("");
-  }
-
-  function abrirModal(id) {
-
-    editingId = id || null;
-
-    document.getElementById("instModalTitle")
-      .textContent =
-      id
-        ? "Editar Instrumento"
-        : "Nuevo Instrumento";
-
-    document.getElementById("instFormError")
-      .classList
-      .add("hidden");
-
-    if (id) {
-
-      const inst =
-        instrumentos.find(
-          x => x.id === id
-        );
-
-      document.getElementById("inpInstNombre").value =
-        inst.name || inst.nombre || "";
-
-      document.getElementById("inpInstCant").value =
-        inst.quantity || inst.cantidad || 1;
-
-    } else {
-
-      document.getElementById("instForm").reset();
-    }
-
-    document.getElementById("instModal")
-      .classList
-      .remove("hidden");
-  }
-
-  function editarInst(id) {
-    abrirModal(id);
-  }
-
-  function cerrarModal() {
-
-    document.getElementById("instModal")
-      .classList
-      .add("hidden");
-
-    editingId = null;
-  }
-
-  async function guardarInst() {
-
-    const btn =
-      document.getElementById("btnGuardarInst");
-
-    const err =
-      document.getElementById("instFormError");
-
-    err.classList.add("hidden");
-
-    btn.textContent = "Guardando...";
-    btn.disabled = true;
-
-    const nombre =
-      document.getElementById("inpInstNombre")
-      .value
-      .trim();
-
-    const cant =
-      parseInt(
-        document.getElementById("inpInstCant")
-        .value
-      );
-
-    const body = {
-      name: nombre,
-      quantity: cant
-    };
-
-    try {
-
-      if (editingId) {
-
-        await apiFetch(
-          `/api/instrumentos/${editingId}`,
-          {
-            method: "PUT",
-            body: JSON.stringify(body)
-          }
-        );
-
-      } else {
-
-        await apiFetch(
-          "/api/instrumentos",
-          {
-            method: "POST",
-            body: JSON.stringify(body)
-          }
-        );
-      }
-
-      cerrarModal();
-
-      mostrarAlerta(
-        "Instrumento guardado ✓",
-        "success"
-      );
-
-      cargarInst();
-
-    } catch(e) {
-
-      err.textContent =
-        e.message;
-
-      err.classList.remove("hidden");
-    }
-
-    btn.textContent = "Guardar";
-    btn.disabled = false;
-  }
-
-  async function eliminarInst(id, qty) {
-
-    if (!confirm("¿Eliminar este instrumento?")) {
-      return;
-    }
-
-    try {
-
-      await apiFetch(
-        `/api/instrumentos/${id}/${qty}`,
-        {
-          method: "DELETE"
-        }
-      );
-
-      mostrarAlerta(
-        "Instrumento eliminado ✓",
-        "success"
-      );
-
-      cargarInst();
-
-    } catch(e) {
-
-      mostrarAlerta(
-        e.message,
-        "error"
-      );
-    }
-  }
-
-  function mostrarAlerta(msg, tipo) {
-
-    const el =
-      document.getElementById("alertaInst");
-
-    el.className =
-      tipo === "success"
-        ? "success-msg"
-        : "error-msg";
-
-    el.textContent = msg;
-
-    setTimeout(() => {
-      el.className = "";
-    }, 3500);
-  }
-
-  cargarInst();
-
-</script>
+</div>
 
 </body>
+
 </html>
